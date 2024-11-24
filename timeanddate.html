@@ -24,6 +24,7 @@
 <body>
     <div id="date"></div>
     <div id="time"></div>
+    <div>Unix TimeStamp: <span id="unix"></span></div>
 
     <script>
         function updateDateTime() {
@@ -32,6 +33,8 @@
             const formattedTime = now.toLocaleTimeString();
             document.getElementById('date').textContent = formattedDate;
             document.getElementById('time').textContent = formattedTime;
+            document.getElementById('time').textContent = Math.floor(Date.now() / 1000);
+            
         }
 
         setInterval(updateDateTime, 1000);
