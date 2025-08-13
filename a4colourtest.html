@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printer Color Test Pattern</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 8pt;
+            background: white;
+        }
+        
+        .test-page {
+            width: 190mm;
+            height: 277mm;
+            margin: 0 auto;
+            background: white;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 5mm;
+        }
+        
+        .header {
+            text-align: center;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 3mm;
+        }
+        
+        .section {
+            margin-bottom: 3mm;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 2mm;
+            font-size: 9pt;
+        }
+        
+        /* Primary Colors */
+        .primary-colors {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 2mm;
+            height: 20mm;
+        }
+        
+        .color-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7pt;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+        }
+        
+        /* RGB Gradients */
+        .rgb-gradients {
+            display: grid;
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1mm;
+            height: 30mm;
+        }
+        
+        .gradient {
+            display: flex;
+            align-items: center;
+            font-size: 7pt;
+            font-weight: bold;
+            padding-left: 5mm;
+        }
+        
+        /* CMYK Test */
+        .cmyk-test {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2mm;
+            height: 25mm;
+        }
+        
+        /* Grayscale */
+        .grayscale {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            gap: 1mm;
+            height: 15mm;
+        }
+        
+        /* Color Wheel */
+        .color-wheel {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1mm;
+            height: 20mm;
+        }
+        
+        /* Fine Lines Test */
+        .line-test {
+            height: 25mm;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .fine-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Halftone Pattern */
+        .halftone {
+            height: 20mm;
+            background-image: 
+                radial-gradient(circle at 25% 25%, #ff0000 1px, transparent 1px),
+                radial-gradient(circle at 75% 25%, #00ff00 1px, transparent 1px),
+                radial-gradient(circle at 25% 75%, #0000ff 1px, transparent 1px),
+                radial-gradient(circle at 75% 75%, #ffff00 1px, transparent 1px);
+            background-size: 4mm 4mm;
+            background-position: 0 0, 2mm 0, 0 2mm, 2mm 2mm;
+        }
+        
+        /* Text Samples */
+        .text-samples {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2mm;
+            height: 25mm;
+        }
+        
+        .text-block {
+            padding: 2mm;
+            font-size: 6pt;
+            line-height: 1.2;
+        }
+        
+        /* Footer Info */
+        .footer {
+            font-size: 7pt;
+            text-align: center;
+            border-top: 1px solid #ccc;
+            padding-top: 2mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-page">
+        <div class="header">
+            PRINTER COLOR CALIBRATION TEST PATTERN
+        </div>
+        
+        <div class="content">
+            <!-- Primary Colors -->
+            <div class="section">
+                <div class="section-title">Primary & Secondary Colors</div>
+                <div class="primary-colors">
+                    <div class="color-block" style="background: #ff0000;">RED</div>
+                    <div class="color-block" style="background: #00ff00; color: black;">GREEN</div>
+                    <div class="color-block" style="background: #0000ff;">BLUE</div>
+                    <div class="color-block" style="background: #ffff00; color: black;">YELLOW</div>
+                    <div class="color-block" style="background: #ff00ff;">MAGENTA</div>
+                    <div class="color-block" style="background: #00ffff; color: black;">CYAN</div>
+                </div>
+            </div>
+            
+            <!-- RGB Gradients -->
+            <div class="section">
+                <div class="section-title">RGB Channel Gradients</div>
+                <div class="rgb-gradients">
+                    <div class="gradient" style="background: linear-gradient(to right, #000000, #ff0000); color: white;">RED GRADIENT</div>
+                    <div class="gradient" style="background: linear-gradient(to right, #000000, #00ff00); color: white;">GREEN GRADIENT</div>
+                    <div class="gradient" style="background: linear-gradient(to right, #000000, #0000ff); color: white;">BLUE GRADIENT</div>
+                </div>
+            </div>
+            
+            <!-- CMYK Test -->
+            <div class="section">
+                <div class="section-title">CMYK Color Test</div>
+                <div class="cmyk-test">
+                    <div class="color-block" style="background: #00ffff; color: black;">CYAN<br>100%</div>
+                    <div class="color-block" style="background: #ff00ff;">MAGENTA<br>100%</div>
+                    <div class="color-block" style="background: #ffff00; color: black;">YELLOW<br>100%</div>
+                    <div class="color-block" style="background: #000000;">BLACK<br>100%</div>
+                </div>
+            </div>
+            
+            <!-- Grayscale -->
+            <div class="section">
+                <div class="section-title">Grayscale Gradient (0-100%)</div>
+                <div class="grayscale">
+                    <div class="color-block" style="background: #000000; font-size: 6pt;">0%</div>
+                    <div class="color-block" style="background: #191919; font-size: 6pt;">10%</div>
+                    <div class="color-block" style="background: #333333; font-size: 6pt;">20%</div>
+                    <div class="color-block" style="background: #4c4c4c; font-size: 6pt;">30%</div>
+                    <div class="color-block" style="background: #666666; font-size: 6pt;">40%</div>
+                    <div class="color-block" style="background: #808080; font-size: 6pt;">50%</div>
+                    <div class="color-block" style="background: #999999; color: black; font-size: 6pt;">60%</div>
+                    <div class="color-block" style="background: #b3b3b3; color: black; font-size: 6pt;">70%</div>
+                    <div class="color-block" style="background: #cccccc; color: black; font-size: 6pt;">80%</div>
+                    <div class="color-block" style="background: #e6e6e6; color: black; font-size: 6pt;">90%</div>
+                    <div class="color-block" style="background: #ffffff; color: black; border: 1px solid #ccc; font-size: 6pt;">100%</div>
+                </div>
+            </div>
+            
+            <!-- Color Wheel -->
+            <div class="section">
+                <div class="section-title">Hue Spectrum (HSV Color Wheel)</div>
+                <div class="color-wheel">
+                    <div class="color-block" style="background: hsl(0, 100%, 50%); font-size: 6pt;">0°</div>
+                    <div class="color-block" style="background: hsl(30, 100%, 50%); font-size: 6pt;">30°</div>
+                    <div class="color-block" style="background: hsl(60, 100%, 50%); color: black; font-size: 6pt;">60°</div>
+                    <div class="color-block" style="background: hsl(90, 100%, 50%); color: black; font-size: 6pt;">90°</div>
+                    <div class="color-block" style="background: hsl(120, 100%, 50%); font-size: 6pt;">120°</div>
+                    <div class="color-block" style="background: hsl(150, 100%, 50%); font-size: 6pt;">150°</div>
+                    <div class="color-block" style="background: hsl(180, 100%, 50%); color: black; font-size: 6pt;">180°</div>
+                    <div class="color-block" style="background: hsl(210, 100%, 50%); font-size: 6pt;">210°</div>
+                    <div class="color-block" style="background: hsl(240, 100%, 50%); font-size: 6pt;">240°</div>
+                    <div class="color-block" style="background: hsl(270, 100%, 50%); font-size: 6pt;">270°</div>
+                    <div class="color-block" style="background: hsl(300, 100%, 50%); font-size: 6pt;">300°</div>
+                    <div class="color-block" style="background: hsl(330, 100%, 50%); font-size: 6pt;">330°</div>
+                </div>
+            </div>
+            
+            <!-- Fine Lines Test -->
+            <div class="section">
+                <div class="section-title">Fine Line & Detail Test</div>
+                <div class="line-test">
+                    <svg class="fine-lines" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Vertical lines of varying thickness -->
+                        <g stroke="#000000" fill="none">
+                            <line x1="10" y1="0" x2="10" y2="100" stroke-width="0.25"/>
+                            <line x1="20" y1="0" x2="20" y2="100" stroke-width="0.5"/>
+                            <line x1="30" y1="0" x2="30" y2="100" stroke-width="1"/>
+                            <line x1="40" y1="0" x2="40" y2="100" stroke-width="1.5"/>
+                            <line x1="50" y1="0" x2="50" y2="100" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Colored fine lines -->
+                        <g stroke-width="0.5" fill="none">
+                            <line x1="70" y1="0" x2="70" y2="100" stroke="#ff0000"/>
+                            <line x1="80" y1="0" x2="80" y2="100" stroke="#00ff00"/>
+                            <line x1="90" y1="0" x2="90" y2="100" stroke="#0000ff"/>
+                            <line x1="100" y1="0" x2="100" y2="100" stroke="#ffff00"/>
+                        </g>
+                        
+                        <!-- Geometric patterns -->
+                        <g stroke="#000000" stroke-width="0.5" fill="none">
+                            <circle cx="130" cy="20" r="15"/>
+                            <rect x="160" y="5" width="30" height="30"/>
+                            <polygon points="210,35 195,5 225,5" />
+                        </g>
+                        
+                        <!-- Grid pattern -->
+                        <g stroke="#666666" stroke-width="0.25" fill="none">
+                            <defs>
+                                <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
+                                    <path d="M 5 0 L 0 0 0 5" stroke="#666666" stroke-width="0.25" fill="none"/>
+                                </pattern>
+                            </defs>
+                            <rect x="250" y="0" width="100" height="100" fill="url(#grid)"/>
+                        </g>
+                        
+                        <!-- Text samples -->
+                        <text x="10" y="85" font-family="Arial" font-size="6" fill="#000000">6pt Black Text Sample</text>
+                        <text x="10" y="95" font-family="Arial" font-size="4" fill="#666666">4pt Gray Text Sample</text>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Halftone Pattern -->
+            <div class="section">
+                <div class="section-title">Halftone & Dithering Test</div>
+                <div class="halftone"></div>
+            </div>
+            
+            <!-- Text on Colored Backgrounds -->
+            <div class="section">
+                <div class="section-title">Text Legibility Test</div>
+                <div class="text-samples">
+                    <div class="text-block" style="background: #000000; color: #ffffff;">
+                        White text on black background. Testing readability and contrast. ABCDEFG 123456
+                    </div>
+                    <div class="text-block" style="background: #ff0000; color: #ffffff;">
+                        White text on red background. Testing color bleeding and clarity. ABCDEFG 123456
+                    </div>
+                    <div class="text-block" style="background: #00ff00; color: #000000;">
+                        Black text on green background. Testing contrast ratios. ABCDEFG 123456
+                    </div>
+                    <div class="text-block" style="background: #0000ff; color: #ffff00;">
+                        Yellow text on blue background. Testing complementary colors. ABCDEFG 123456
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Saturation Test -->
+            <div class="section">
+                <div class="section-title">Saturation Levels</div>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 2mm; height: 15mm;">
+                    <div class="color-block" style="background: hsl(0, 100%, 50%); font-size: 6pt;">100%</div>
+                    <div class="color-block" style="background: hsl(0, 75%, 50%); font-size: 6pt;">75%</div>
+                    <div class="color-block" style="background: hsl(0, 50%, 50%); font-size: 6pt;">50%</div>
+                    <div class="color-block" style="background: hsl(0, 25%, 50%); font-size: 6pt;">25%</div>
+                    <div class="color-block" style="background: hsl(0, 0%, 50%); font-size: 6pt;">0%</div>
+                </div>
+            </div>
+            
+            <!-- Brightness Test -->
+            <div class="section">
+                <div class="section-title">Brightness Levels</div>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 2mm; height: 15mm;">
+                    <div class="color-block" style="background: hsl(240, 100%, 90%); color: black; font-size: 6pt;">90%</div>
+                    <div class="color-block" style="background: hsl(240, 100%, 70%); font-size: 6pt;">70%</div>
+                    <div class="color-block" style="background: hsl(240, 100%, 50%); font-size: 6pt;">50%</div>
+                    <div class="color-block" style="background: hsl(240, 100%, 30%); font-size: 6pt;">30%</div>
+                    <div class="color-block" style="background: hsl(240, 100%, 10%); font-size: 6pt;">10%</div>
+                </div>
+            </div>
+            
+            <!-- Complex Color Mix -->
+            <div class="section">
+                <div class="section-title">Complex Color Combinations</div>
+                <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 1mm; height: 20mm;">
+                    <div class="color-block" style="background: #ff6b6b; font-size: 6pt;">Coral</div>
+                    <div class="color-block" style="background: #4ecdc4; color: black; font-size: 6pt;">Teal</div>
+                    <div class="color-block" style="background: #45b7d1; font-size: 6pt;">Sky</div>
+                    <div class="color-block" style="background: #96ceb4; color: black; font-size: 6pt;">Mint</div>
+                    <div class="color-block" style="background: #ffeaa7; color: black; font-size: 6pt;">Cream</div>
+                    <div class="color-block" style="background: #dda0dd; color: black; font-size: 6pt;">Plum</div>
+                    <div class="color-block" style="background: #98d8c8; color: black; font-size: 6pt;">Sage</div>
+                    <div class="color-block" style="background: #f7dc6f; color: black; font-size: 6pt;">Gold</div>
+                </div>
+            </div>
+            
+            <!-- Registration Test -->
+            <div class="section">
+                <div class="section-title">Registration & Alignment Test</div>
+                <div style="height: 20mm; position: relative; border: 1px solid #000;">
+                    <svg width="100%" height="100%" viewBox="0 0 400 80">
+                        <!-- Registration marks -->
+                        <g stroke="#000000" stroke-width="0.5" fill="none">
+                            <circle cx="20" cy="40" r="10"/>
+                            <line x1="10" y1="40" x2="30" y2="40"/>
+                            <line x1="20" y1="30" x2="20" y2="50"/>
+                        </g>
+                        
+                        <!-- Overlapping color registration -->
+                        <g opacity="0.7">
+                            <rect x="60" y="20" width="30" height="40" fill="#ff0000"/>
+                            <rect x="70" y="20" width="30" height="40" fill="#00ff00"/>
+                            <rect x="80" y="20" width="30" height="40" fill="#0000ff"/>
+                        </g>
+                        
+                        <!-- Fine crosshairs -->
+                        <g stroke="#000000" stroke-width="0.25">
+                            <line x1="150" y1="35" x2="170" y2="35"/>
+                            <line x1="160" y1="25" x2="160" y2="45"/>
+                            <line x1="200" y1="35" x2="220" y2="35"/>
+                            <line x1="210" y1="25" x2="210" y2="45"/>
+                        </g>
+                        
+                        <!-- Target pattern -->
+                        <g stroke="#000000" stroke-width="0.5" fill="none">
+                            <circle cx="300" cy="40" r="5"/>
+                            <circle cx="300" cy="40" r="10"/>
+                            <circle cx="300" cy="40" r="15"/>
+                            <circle cx="300" cy="40" r="20"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Small Text Test -->
+            <div class="section">
+                <div class="section-title">Small Text Clarity Test</div>
+                <div style="height: 25mm; padding: 2mm; background: #f8f8f8;">
+                    <div style="font-size: 8pt; margin-bottom: 2mm;">8pt: The quick brown fox jumps over the lazy dog. 0123456789</div>
+                    <div style="font-size: 6pt; margin-bottom: 2mm;">6pt: The quick brown fox jumps over the lazy dog. 0123456789</div>
+                    <div style="font-size: 4pt; margin-bottom: 2mm;">4pt: The quick brown fox jumps over the lazy dog. 0123456789</div>
+                    <div style="font-size: 3pt;">3pt: The quick brown fox jumps over the lazy dog. 0123456789</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Print Date: <span id="printDate"></span> | 
+            Check for: Color accuracy, gradient smoothness, text clarity, line sharpness, registration alignment
+        </div>
+    </div>
+    
+    <script>
+        // Add current date
+        document.getElementById('printDate').textContent = new Date().toLocaleDateString();
+        
+        // Print dialog hint
+        console.log('To print: Press Ctrl+P (Windows) or Cmd+P (Mac)');
+        console.log('For PDF: Choose "Save as PDF" in the print dialog');
+    </script>
+</body>
+</html>
