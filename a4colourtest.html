@@ -20,12 +20,12 @@
         
         .test-page {
             width: 190mm;
-            height: 277mm;
+            height: 267mm;
             margin: 0 auto;
             background: white;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            gap: 5mm;
+            display: flex;
+            flex-direction: column;
+            gap: 3mm;
         }
         
         .header {
@@ -49,8 +49,8 @@
         .primary-colors {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 2mm;
-            height: 20mm;
+            gap: 1mm;
+            height: 15mm;
         }
         
         .color-block {
@@ -68,7 +68,7 @@
             display: grid;
             grid-template-rows: repeat(3, 1fr);
             gap: 1mm;
-            height: 30mm;
+            height: 18mm;
         }
         
         .gradient {
@@ -83,8 +83,8 @@
         .cmyk-test {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 2mm;
-            height: 25mm;
+            gap: 1mm;
+            height: 18mm;
         }
         
         /* Grayscale */
@@ -92,7 +92,7 @@
             display: grid;
             grid-template-columns: repeat(11, 1fr);
             gap: 1mm;
-            height: 15mm;
+            height: 12mm;
         }
         
         /* Color Wheel */
@@ -100,12 +100,12 @@
             display: grid;
             grid-template-columns: repeat(12, 1fr);
             gap: 1mm;
-            height: 20mm;
+            height: 15mm;
         }
         
         /* Fine Lines Test */
         .line-test {
-            height: 25mm;
+            height: 18mm;
             position: relative;
             overflow: hidden;
         }
@@ -118,7 +118,7 @@
         
         /* Halftone Pattern */
         .halftone {
-            height: 20mm;
+            height: 15mm;
             background-image: 
                 radial-gradient(circle at 25% 25%, #ff0000 1px, transparent 1px),
                 radial-gradient(circle at 75% 25%, #00ff00 1px, transparent 1px),
@@ -132,8 +132,8 @@
         .text-samples {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 2mm;
-            height: 25mm;
+            gap: 1mm;
+            height: 18mm;
         }
         
         .text-block {
