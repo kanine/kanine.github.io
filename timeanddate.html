@@ -40,7 +40,7 @@
                   hour12: true   // or true if you want AM/PM
                 });
             document.getElementById('date').textContent = formattedDate;
-            document.getElementById('time').textContent = formattedTime;
+            document.getElementById('time').textContent = formattedTime.replace(/am|pm/, match => match.toUpperCase();
             document.getElementById('unix').textContent = Math.floor(now / 1000);
             
         }
