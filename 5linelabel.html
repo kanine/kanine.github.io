@@ -40,7 +40,7 @@
       }
     }
 
-    /* Only the label should print */
+    /* Only the form should hide during print */
     @media print {
       .no-print { display: none !important; }
       .label { box-shadow: none !important; margin: 0 !important; }
@@ -98,7 +98,7 @@
     const raw = textarea.value || '';
     let lines = raw.split(/\r?\n/).map(s => s.trim());
 
-    // Remove leading/trailing empty lines but keep intentional blanks inside
+    // Remove leading/trailing empty lines; keep intentional blanks inside
     while (lines.length && lines[0] === '') lines.shift();
     while (lines.length && lines[lines.length - 1] === '') lines.pop();
     lines = lines.slice(0, 5); // cap at 5 lines
@@ -106,38 +106,39 @@
     labelLines.innerHTML = '';
     if (lines.length === 0) {
       labelBox.hidden = true;
-      return false; // indicate nothing to print
+      return false;
     }
     for (const line of lines) {
       const p = document.createElement('p');
-      p.textContent = sanitize(line);
+      // Preserve intentional blank interior lines as visual space
+      p.textContent = line === '' ? '\u00A0' : sanitize(line);
       labelLines.appendChild(p);
     }
     labelBox.hidden = false;
     return true;
   }
 
-  // Keep Generate for manual preview if desired
-  btnGen.addEventListener('click', () => {
-    buildLabel();
-  });
+  // Manual generate (kept for convenience)
+  btnGen.addEventListener('click', buildLabel);
 
-  // NEW: Print button builds the label, then opens print dialog
+  // Print button builds the label, then opens print
   btnPrint.addEventListener('click', () => {
     const ok = buildLabel();
-    if (!ok) return; // no content, don't print
-    // Ensure DOM has updated before printing
+    if (!ok) return;
     requestAnimationFrame(() => window.print());
   });
 
-  // Enable/disable buttons live based on content
-  function refreshButtons() {
+  // LIVE PREVIEW: rebuild label and update buttons on every keystroke
+  function refreshUI() {
     const hasText = textarea.value.trim().length > 0;
-    btnGen.disabled = false;          // allow manual generate anytime
-    btnPrint.disabled = !hasText;     // enable print as soon as there is text
+    btnPrint.disabled = !hasText;
+    // Build live preview (shows/hides label automatically)
+    buildLabel();
   }
-  textarea.addEventListener('input', refreshButtons);
-  refreshButtons(); // initial
+  textarea.addEventListener('input', refreshUI);
+
+  // Initial state
+  refreshUI();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
