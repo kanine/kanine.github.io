@@ -91,7 +91,6 @@
   const labelLines = document.getElementById('label-lines');
 
   function sanitize(text) {
-    // Basic escape to prevent HTML injection
     const div = document.createElement('div');
     div.textContent = text;
     return div.textContent;
@@ -99,19 +98,17 @@
 
   function buildLabel() {
     const raw = textarea.value || '';
-    // Split lines, trim, cap at 5 lines, drop empty lines at ends
     let lines = raw.split(/\r?\n/).map(s => s.trim());
+
     // Remove leading/trailing empty lines but keep intentional blanks inside
     while (lines.length && lines[0] === '') lines.shift();
     while (lines.length && lines[lines.length - 1] === '') lines.pop();
-    lines = lines.slice(0, 5);
+    lines = lines.slice(0, 5); // cap at 5 lines
 
-    // Render
     labelLines.innerHTML = '';
     if (lines.length === 0) {
       labelBox.hidden = true;
-      btnPrint.disabled = true;
-      return;
+      return false; // indicate nothing to print
     }
     for (const line of lines) {
       const p = document.createElement('p');
@@ -119,25 +116,31 @@
       labelLines.appendChild(p);
     }
     labelBox.hidden = false;
-    btnPrint.disabled = false;
+    return true;
   }
 
-  btnGen.addEventListener('click', buildLabel);
+  // Keep Generate for manual preview if desired
+  btnGen.addEventListener('click', () => {
+    buildLabel();
+  });
+
+  // NEW: Print button builds the label, then opens print dialog
   btnPrint.addEventListener('click', () => {
-    // Only allow printing if label is visible
-    if (!labelBox.hidden) window.print();
+    const ok = buildLabel();
+    if (!ok) return; // no content, don't print
+    // Ensure DOM has updated before printing
+    requestAnimationFrame(() => window.print());
   });
 
-  // Optional: live preview while typing (comment out if you want manual only)
-  textarea.addEventListener('input', () => {
-    // Enable generate if there is any content; keep print disabled until generated
-    btnGen.disabled = !textarea.value.trim();
-  });
-
-  // Initialize state
-  btnGen.disabled = false;
+  // Enable/disable buttons live based on content
+  function refreshButtons() {
+    const hasText = textarea.value.trim().length > 0;
+    btnGen.disabled = false;          // allow manual generate anytime
+    btnPrint.disabled = !hasText;     // enable print as soon as there is text
+  }
+  textarea.addEventListener('input', refreshButtons);
+  refreshButtons(); // initial
 </script>
 
 </body>
 </html>
-
