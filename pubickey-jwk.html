@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JWK Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f9f9f9;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    #jwk {
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.9rem;
+      padding: 1rem;
+      border: 2px solid #333;
+      border-radius: 6px;
+      background: #fff;
+      max-width: 90%;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background-color: #4CAF50;
+      color: white;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .note {
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      color: #666;
+      text-align: center;
+      max-width: 500px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Public Key JWK Generator</h1>
+  <div id="jwk">Generating…</div>
+  <button onclick="copyJwk()">Copy to Clipboard</button>
+
+  <div class="note">
+    This generates a new RSA-2048 key pair in your browser and shows only the <b>public key</b> in JWK format.<br>
+    Refresh the page to generate another.
+  </div>
+
+  <script>
+    async function generateJwk() {
+      // Generate RSA keypair
+      const keyPair = await crypto.subtle.generateKey(
+        {
+          name: "RSA-OAEP",
+          modulusLength: 2048,
+          publicExponent: new Uint8Array([1, 0, 1]),
+          hash: "SHA-256"
+        },
+        true, // extractable
+        ["encrypt", "decrypt"]
+      );
+
+      // Export the public key to JWK
+      const jwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+      return jwk;
+    }
+
+    async function showJwk() {
+      const jwk = await generateJwk();
+      document.getElementById('jwk').innerText = JSON.stringify(jwk, null, 2);
+    }
+
+    function copyJwk() {
+      const jwkText = document.getElementById('jwk').innerText;
+      navigator.clipboard.writeText(jwkText).then(() => {
+        alert("JWK copied to clipboard!");
+      });
+    }
+
+    // Generate on page load
+    showJwk();
+  </script>
+</body>
+</html>
