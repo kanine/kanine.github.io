@@ -1,116 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Ed25519 JWK (Public) Generator</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>Ed25519 JWK Generator (Public & Private)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f7f7f8; margin:0; padding:2rem; display:flex; align-items:center; justify-content:center; min-height:100vh; }
-    .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; max-width:820px; width:100%; box-shadow:0 2px 10px rgba(0,0,0,.06); padding:1.25rem 1.25rem 1rem; }
+    :root { --bg:#f7f7f8; --card:#fff; --border:#e5e7eb; --ink:#111827; --muted:#6b7280; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); margin:0; padding:2rem; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; width:min(980px, 100%); box-shadow:0 2px 10px rgba(0,0,0,.06); padding:1.25rem; }
     h1 { margin:.25rem 0 1rem; font-size:1.35rem; }
     .row { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; }
-    button { appearance:none; border:1px solid #111827; background:#111827; color:#fff; padding:.6rem 1rem; border-radius:10px; cursor:pointer; font-weight:600; }
-    button.secondary { background:#fff; color:#111827; }
-    pre { background:#0b1020; color:#e8eef9; padding:1rem; border-radius:10px; overflow:auto; max-height:60vh; }
-    .muted { color:#6b7280; font-size:.9rem; }
+    button { appearance:none; border:1px solid var(--ink); background:var(--ink); color:#fff; padding:.6rem 1rem; border-radius:10px; cursor:pointer; font-weight:600; }
+    button.secondary { background:#fff; color:var(--ink); }
+    .grid { display:grid; grid-template-columns: 1fr; gap:1rem; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .panel { border:1px solid var(--border); border-radius:12px; padding:1rem; background:#fff; }
+    .panel h2 { margin:.25rem 0 .5rem; font-size:1rem; }
+    pre { background:#0b1020; color:#e8eef9; padding:1rem; border-radius:10px; overflow:auto; max-height:50vh; }
+    .muted { color:var(--muted); font-size:.92rem; }
     .warn { color:#b45309; }
+    .btns { display:flex; gap:.5rem; margin:.5rem 0 0; flex-wrap:wrap; }
+    .tiny { font-size:.85rem; padding:.45rem .7rem; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Ed25519 Public Key (JWK) Generator</h1>
+    <h1>Ed25519 JWK Generator</h1>
     <div class="row">
-      <button id="btnGenerate">Generate</button>
-      <button id="btnCopy" class="secondary">Copy JSON</button>
-      <button id="btnDownload" class="secondary">Download JSON</button>
+      <button id="btnGenerate">Generate New Keypair</button>
+      <button id="btnWipe" class="secondary">Wipe Outputs</button>
     </div>
 
-    <pre id="output">{ "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "…", "use": "sig", "alg": "EdDSA" } }</pre>
+    <div class="grid">
+      <div class="panel">
+        <h2>Public JWK (wrapped)</h2>
+        <pre id="pubOut">{ "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "…", "use": "sig", "alg": "EdDSA" } }</pre>
+        <div class="btns">
+          <button id="copyPub" class="secondary tiny">Copy Public JSON</button>
+          <button id="dlPub" class="secondary tiny">Download Public JSON</button>
+        </div>
+      </div>
 
-    <p class="muted">
-      Generates a fresh Ed25519 keypair in your browser using the Web Crypto API and shows the
-      <b>public</b> key as JWK in the required format:
-      <code>{ "jwk": { "kty":"OKP","crv":"Ed25519","x":"…","use":"sig","alg":"EdDSA" } }</code>.
-      Refresh or click <b>Generate</b> for a new one.
-    </p>
-    <p id="support" class="muted"></p>
+      <div class="panel">
+        <h2>Private JWK (wrapped)</h2>
+        <pre id="privOut">{ "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "…", "d": "…", "use": "sig", "alg": "EdDSA" } }</pre>
+        <div class="btns">
+          <button id="copyPriv" class="secondary tiny">Copy Private JSON</button>
+          <button id="dlPriv" class="secondary tiny">Download Private JSON</button>
+        </div>
+        <p class="muted warn" style="margin:.5rem 0 0;">
+          Keep the private JWK secret. Anyone with <code>d</code> can sign as you.
+        </p>
+      </div>
+    </div>
+
+    <p id="support" class="muted" style="margin-top:1rem;"></p>
   </div>
 
   <script>
-  async function generateEd25519PublicJwkWrapped() {
-    // Generate Ed25519 keypair (extractable so we can export the public part)
-    const keyPair = await crypto.subtle.generateKey(
-      { name: "Ed25519" },
-      true,
-      ["sign", "verify"]
-    );
+    async function generateEd25519Keypair() {
+      // Generate extractable so we can export both keys as JWK.
+      const keyPair = await crypto.subtle.generateKey(
+        { name: "Ed25519" },
+        true,
+        ["sign", "verify"]
+      );
 
-    // Export the public key to JWK (will include kty=OKP, crv=Ed25519, x=Base64URL)
-    const pubJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+      const pubJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+      const privJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
 
-    // Wrap it to the exact format requested and add use/alg
-    const wrapped = {
-      jwk: {
-        kty: "OKP",
-        crv: "Ed25519",
-        x: pubJwk.x,
-        use: "sig",
-        alg: "EdDSA"
-      }
-    };
-    return wrapped;
-  }
+      const publicWrapped = {
+        jwk: {
+          kty: "OKP",
+          crv: "Ed25519",
+          x: pubJwk.x,
+          use: "sig",
+          alg: "EdDSA"
+        }
+      };
 
-  function setOutput(obj) {
-    document.getElementById("output").textContent = JSON.stringify(obj, null, 2);
-  }
+      const privateWrapped = {
+        jwk: {
+          kty: "OKP",
+          crv: "Ed25519",
+          x: privJwk.x,
+          d: privJwk.d,
+          use: "sig",
+          alg: "EdDSA"
+        }
+      };
 
-  async function generateAndShow() {
-    try {
-      const wrapped = await generateEd25519PublicJwkWrapped();
-      setOutput(wrapped);
-    } catch (e) {
-      setOutput({ error: "Failed to generate Ed25519 key. Your browser may not support Ed25519 yet.", details: String(e) });
+      return { publicWrapped, privateWrapped };
     }
-  }
 
-  function copyOutput() {
-    const text = document.getElementById("output").textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      alert("Copied JSON to clipboard.");
-    });
-  }
+    function setOutput(id, obj) {
+      document.getElementById(id).textContent = JSON.stringify(obj, null, 2);
+    }
 
-  function downloadOutput() {
-    const text = document.getElementById("output").textContent;
-    const blob = new Blob([text], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ed25519-public-jwk.json";
-    document.body.appendChild(a);
-    a.click();
-    URL.revokeObjectURL(url);
-    a.remove();
-  }
+    function copyFrom(id) {
+      const text = document.getElementById(id).textContent;
+      return navigator.clipboard.writeText(text);
+    }
 
-  // UI wiring
-  document.getElementById("btnGenerate").addEventListener("click", generateAndShow);
-  document.getElementById("btnCopy").addEventListener("click", copyOutput);
-  document.getElementById("btnDownload").addEventListener("click", downloadOutput);
+    function downloadFrom(id, filename) {
+      const text = document.getElementById(id).textContent;
+      const blob = new Blob([text], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+    }
 
-  // Feature detection / hint
-  const supportEl = document.getElementById("support");
-  if (!crypto?.subtle) {
-    supportEl.innerHTML = '<span class="warn">Web Crypto API is unavailable in this context.</span>';
-  } else {
-    // Try to hint if Ed25519 is likely supported
-    // (Some older browsers may not support "Ed25519" yet.)
-    supportEl.textContent = "If your browser supports Ed25519 in Web Crypto, this will work offline.";
-  }
+    async function onGenerate() {
+      try {
+        const { publicWrapped, privateWrapped } = await generateEd25519Keypair();
+        setOutput("pubOut", publicWrapped);
+        setOutput("privOut", privateWrapped);
+      } catch (e) {
+        setOutput("pubOut", { error: "Failed to generate Ed25519 keypair.", details: String(e) });
+        setOutput("privOut", { error: "Failed to generate Ed25519 keypair.", details: String(e) });
+      }
+    }
 
-  // Auto-generate on load
-  generateAndShow();
+    function onWipe() {
+      setOutput("pubOut", { "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "…" , "use":"sig","alg":"EdDSA"} });
+      setOutput("privOut", { "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "…", "d": "…", "use":"sig","alg":"EdDSA"} });
+    }
+
+    // Wire up UI
+    document.getElementById("btnGenerate").addEventListener("click", onGenerate);
+    document.getElementById("btnWipe").addEventListener("click", onWipe);
+    document.getElementById("copyPub").addEventListener("click", () => copyFrom("pubOut").then(() => alert("Public JWK copied.")));
+    document.getElementById("dlPub").addEventListener("click", () => downloadFrom("pubOut", "ed25519-public-jwk.json"));
+    document.getElementById("copyPriv").addEventListener("click", () => copyFrom("privOut").then(() => alert("Private JWK copied.")));
+    document.getElementById("dlPriv").addEventListener("click", () => downloadFrom("privOut", "ed25519-private-jwk.json"));
+
+    // Feature detection note
+    const supportEl = document.getElementById("support");
+    if (!crypto?.subtle) {
+      supportEl.innerHTML = '<span class="warn">Web Crypto API is unavailable in this context (try a modern browser over HTTPS).</span>';
+    } else {
+      supportEl.textContent = "Keys are generated locally in your browser; nothing is uploaded.";
+    }
+
+    // Auto-generate on load
+    onGenerate();
   </script>
 </body>
 </html>
