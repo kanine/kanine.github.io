@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>UUID Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f9f9f9;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    #uuid {
+      font-size: 1.4rem;
+      font-weight: bold;
+      padding: 0.5rem 1rem;
+      border: 2px solid #333;
+      border-radius: 6px;
+      background: #fff;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background-color: #4CAF50;
+      color: white;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .note {
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>UUID v4 Generator</h1>
+  <div id="uuid">Loading…</div>
+  <button onclick="copyUuid()">Copy to Clipboard</button>
+
+  <div class="note">
+    Refresh the page for a new UUID
+  </div>
+
+  <script>
+    function generateUuidV4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function copyUuid() {
+      const uuid = document.getElementById('uuid').innerText;
+      navigator.clipboard.writeText(uuid).then(() => {
+        alert("UUID copied to clipboard!");
+      });
+    }
+
+    // Generate and display UUID when page loads
+    document.getElementById('uuid').innerText = generateUuidV4();
+  </script>
+</body>
+</html>
