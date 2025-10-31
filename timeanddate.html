@@ -20,17 +20,17 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
-            /* align-items: center; <-- REMOVED THIS LINE to stop vertical centering */
             min-height: 100vh;
             margin: 0;
             background: linear-gradient(135deg, #1f2937, #111827);
             color: var(--text-color);
             overflow: hidden;
-
-            /* --- ADDED THIS LINE --- */
-            /* This pushes the content down from the top. Adjust as needed. */
             padding-top: 20vh;
-            box-sizing: border-box; /* Ensures padding is included in height calculation */
+            box-sizing: border-box;
+
+            /* --- THIS IS THE FIX --- */
+            /* This stops the clock container from stretching to the bottom of the page. */
+            align-items: flex-start;
         }
 
         .clock-container {
@@ -128,7 +128,7 @@
             const [time, period] = timeString.split(' ');
             
             // Reconstruct with custom HTML for better styling
-            timeElement.innerHTML = `${time}<span class="period">${period}</span>`;
+            timeElement.innerHTML = `${time}<span class="period">${period.toLowerCase()}</span>`; // Made period lowercase for consistency
 
             // Update Unix timestamp
             unixElement.textContent = Math.floor(now.getTime() / 1000);
