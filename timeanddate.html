@@ -3,50 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Current Date and Time</title>
+    <title>Modern Clock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --background-color: #121212;
+            --container-color: rgba(255, 255, 255, 0.1);
+            --text-color: rgba(255, 255, 255, 0.9);
+            --subtle-text-color: rgba(255, 255, 255, 0.6);
+            --glow-color: rgba(77, 137, 255, 0.2);
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-top: 50px;
-            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #1f2937, #111827);
+            color: var(--text-color);
+            overflow: hidden;
         }
-        #date {
-            font-size: 3vw;
+
+        .clock-container {
+            text-align: center;
+            padding: 2.5rem 3.5rem;
+            background: var(--container-color);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); /* For Safari */
+            box-shadow: 0 8px 32px 0 var(--glow-color);
+            animation: fadeIn 1s ease-out;
         }
+
         #time {
-            font-size: 10vw;
+            /* This makes the font size responsive but with min/max limits */
+            font-size: clamp(4rem, 12vw, 8rem); 
+            font-weight: 700;
+            letter-spacing: -2px;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
         }
+        
+        #time .period {
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            font-weight: 300;
+            margin-left: 0.5rem;
+            vertical-align: super;
+        }
+
+        #date {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
         #unixtimestamp {
-            font-size: 2vw;
-        }        
+            font-size: clamp(0.75rem, 2vw, 1rem);
+            font-weight: 400;
+            margin-top: 1.5rem;
+            color: var(--subtle-text-color);
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
     </style>
 </head>
 <body>
-    <div id="date"></div>
-    <div id="time"></div>
-    <div id="unixtimestamp">Unix TimeStamp: <span id="unix"></span></div>
+
+    <div class="clock-container">
+        <div id="date"></div>
+        <div id="time"></div>
+        <div id="unixtimestamp">Unix: <span id="unix"></span></div>
+    </div>
 
     <script>
+        // Cache the DOM elements so we don't query them every second
+        const dateElement = document.getElementById('date');
+        const timeElement = document.getElementById('time');
+        const unixElement = document.getElementById('unix');
+
         function updateDateTime() {
             const now = new Date();
-            const formattedDate = now.toLocaleDateString();
-            const formattedTime = now.toLocaleTimeString(undefined, {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  second: '2-digit',
-                  hour12: true   // or true if you want AM/PM
-                });
-            document.getElementById('date').textContent = formattedDate;
-            document.getElementById('time').textContent = formattedTime.replace(/am|pm/, match => match.toUpperCase());
-            document.getElementById('unix').textContent = Math.floor(now / 1000);
+
+            // More descriptive date format options
+            const dateOptions = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            dateElement.textContent = now.toLocaleDateString(undefined, dateOptions);
             
+            // Format time without AM/PM to handle it separately
+            const timeString = now.toLocaleTimeString(undefined, {
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+
+            // Split the time from the AM/PM period
+            const [time, period] = timeString.split(' ');
+            
+            // Reconstruct with custom HTML for better styling
+            timeElement.innerHTML = `${time}<span class="period">${period}</span>`;
+
+            // Update Unix timestamp
+            unixElement.textContent = Math.floor(now.getTime() / 1000);
         }
 
+        // Run the function every second
         setInterval(updateDateTime, 1000);
-        updateDateTime(); // Initial call to display the date and time immediately
+        
+        // Initial call to display immediately on load
+        updateDateTime(); 
     </script>
+
 </body>
 </html>
