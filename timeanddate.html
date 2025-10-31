@@ -48,6 +48,10 @@
             margin: 0;
             padding: 0;
             line-height: 1;
+
+            /* --- THIS IS THE FIX --- */
+            /* It forces all numbers (0-9) to have the same width. */
+            font-variant-numeric: tabular-nums;
         }
         
         #time .period {
