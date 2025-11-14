@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Print 100x48</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&display=swap" rel="stylesheet">
+
+    <style>
+        /* General Reset */
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0; /* Light grey background for screen to see the labels */
+        }
+
+        /* 2. Define the Label Dimensions and Font */
+        .label {
+            /* Physical Size */
+            width: 100mm;
+            height: 48mm;
+            
+            /* Formatting */
+            background-color: white;
+            font-family: 'Tenor Sans', sans-serif;
+            padding: 5mm; /* Internal margin so text doesn't hit the edge */
+            box-sizing: border-box; /* Ensures padding doesn't increase total size */
+            
+            /* Centering for visual appeal */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            
+            /* Visualization for Screen Only */
+            margin: 10px auto;
+            border: 1px dashed #ccc;
+        }
+
+        /* 3. The Page Break Logic */
+        .label {
+            /* Forces a new page after this element */
+            page-break-after: always; /* Legacy support */
+            break-after: page;        /* Modern standard */
+        }
+
+        /* Prevents an empty blank page after the very last label */
+        .label:last-of-type {
+            page-break-after: auto;
+            break-after: auto;
+        }
+
+        /* 4. Print Specific Settings */
+        @media print {
+            body, html {
+                background-color: white;
+            }
+
+            .label {
+                margin: 0;       /* Remove screen margins */
+                border: none;    /* Remove border for actual print */
+            }
+
+            /* Tells the printer the paper size is custom */
+            @page {
+                size: 100mm 48mm;
+                margin: 0; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="label">
+        <h2 style="margin: 0;">ORGANIC HONEY</h2>
+        <p>Batch #57086</p>
+        <small>100% Natural</small>
+    </div>
+
+    <div class="label">
+        <h2 style="margin: 0;">ORGANIC HONEY</h2>
+        <p>Batch #57087</p>
+        <small>100% Natural</small>
+    </div>
+
+    <div class="label">
+        <h2 style="margin: 0;">ORGANIC HONEY</h2>
+        <p>Batch #57088</p>
+        <small>100% Natural</small>
+    </div>
+
+    <div class="label">
+        <h2 style="margin: 0;">ORGANIC HONEY</h2>
+        <p>Batch #57089</p>
+        <small>100% Natural</small>
+    </div>
+
+    <div class="label">
+        <h2 style="margin: 0;">ORGANIC HONEY</h2>
+        <p>Batch #57090</p>
+        <small>100% Natural</small>
+    </div>
+
+</body>
+</html>
