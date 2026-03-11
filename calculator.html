@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markup Calculator</title>
+    <style>
+        /* CSS Styling */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .calculator {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 320px;
+        }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ccd1d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .results {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 2px dashed #eee;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+        .result-row span:last-child {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        .highlight {
+            color: #27ae60 !important; /* Green for final price */
+            font-size: 1.2rem !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <h2>Markup Calculator</h2>
+    
+    <div class="input-group">
+        <label for="cost">Cost Price ($)</label>
+        <input type="number" id="cost" min="0" step="0.01" placeholder="e.g., 50.00" oninput="calculateMarkup()">
+    </div>
+    
+    <div class="input-group">
+        <label for="markup">Markup (%)</label>
+        <input type="number" id="markup" min="0" step="0.1" placeholder="e.g., 20" oninput="calculateMarkup()">
+    </div>
+    
+    <button onclick="calculateMarkup()">Calculate</button>
+
+    <div class="results">
+        <div class="result-row">
+            <span>Profit Amount:</span>
+            <span id="profitAmount">$0.00</span>
+        </div>
+        <div class="result-row">
+            <span>Gross Margin:</span>
+            <span id="grossMargin">0.00%</span>
+        </div>
+        <div class="result-row">
+            <span>Selling Price:</span>
+            <span id="sellingPrice" class="highlight">$0.00</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Vanilla JavaScript Logic
+    function calculateMarkup() {
+        // 1. Grab values from the input fields
+        const cost = parseFloat(document.getElementById('cost').value);
+        const markupPercentage = parseFloat(document.getElementById('markup').value);
+
+        // 2. Grab the elements where we will display the results
+        const profitEl = document.getElementById('profitAmount');
+        const priceEl = document.getElementById('sellingPrice');
+        const marginEl = document.getElementById('grossMargin');
+
+        // 3. Validation: If inputs are empty or invalid, reset to default and stop
+        if (isNaN(cost) || isNaN(markupPercentage) || cost < 0 || markupPercentage < 0) {
+            profitEl.textContent = '$0.00';
+            priceEl.textContent = '$0.00';
+            marginEl.textContent = '0.00%';
+            return;
+        }
+
+        // 4. Perform the calculations
+        const profit = cost * (markupPercentage / 100);
+        const sellingPrice = cost + profit;
+        
+        // Gross Margin is Profit divided by Revenue (Selling Price)
+        // We use a ternary operator to prevent division by zero
+        const grossMargin = sellingPrice > 0 ? (profit / sellingPrice) * 100 : 0;
+
+        // 5. Output the results to the DOM, formatted to 2 decimal places
+        profitEl.textContent = '$' + profit.toFixed(2);
+        priceEl.textContent = '$' + sellingPrice.toFixed(2);
+        marginEl.textContent = grossMargin.toFixed(2) + '%';
+    }
+</script>
+
+</body>
+</html>
