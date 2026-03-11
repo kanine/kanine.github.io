@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#3498db">
+    <meta name="description" content="A simple and fast markup calculator">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Markup Calc">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233498db' width='192' height='192'/><text x='50%' y='50%' font-size='120' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'>$</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%233498db' width='180' height='180'/><text x='50%' y='50%' font-size='110' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'>$</text></svg>">
+    <title>Markup Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Dark mode support */
+        :root {
+            --bg-primary: #f4f4f9;
+            --bg-secondary: #ffffff;
+            --text-primary: #333;
+            --text-secondary: #555;
+            --text-tertiary: #2c3e50;
+            --border-color: #ccd1d9;
+            --border-dashed: #eee;
+            --button-bg: #3498db;
+            --button-hover: #2980b9;
+            --focus-color: #3498db;
+            --accent-green: #27ae60;
+            --shadow: rgba(0,0,0,0.1);
+        }
+
+        body.dark-mode {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #e8e8e8;
+            --text-secondary: #b8b8b8;
+            --text-tertiary: #a0d8ff;
+            --border-color: #444;
+            --border-dashed: #444;
+            --button-bg: #2980b9;
+            --button-hover: #3498db;
+            --focus-color: #5ca3e0;
+            --accent-green: #2ecc71;
+            --shadow: rgba(0,0,0,0.3);
+        }
+
+        /* CSS Styling */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+            padding: 1rem;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            right: 0;
+            padding: 1rem;
+            z-index: 100;
+        }
+
+        .theme-toggle {
+            background: var(--button-bg);
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: background-color 0.2s;
+            color: white;
+        }
+
+        .theme-toggle:hover {
+            background: var(--button-hover);
+        }
+
+        .calculator {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px var(--shadow);
+            width: 100%;
+            max-width: 320px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            margin-top: 2rem;
+        }
+
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--text-tertiary);
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--focus-color);
+        }
+
+        button:not(.theme-toggle) {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:not(.theme-toggle):hover {
+            background-color: var(--button-hover);
+        }
+
+        .results {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 2px dashed var(--border-dashed);
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .result-row span:last-child {
+            font-weight: bold;
+            color: var(--text-tertiary);
+            font-size: 1.1rem;
+        }
+
+        .highlight {
+            color: var(--accent-green) !important;
+            font-size: 1.2rem !important;
+        }
+
+        /* Mobile optimization */
+        @media (max-width: 480px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .header {
+                padding: 0.75rem;
+            }
+
+            .theme-toggle {
+                width: 44px;
+                height: 44px;
+                font-size: 1.25rem;
+            }
+
+            .calculator {
+                padding: 1.5rem;
+                margin-top: 3rem;
+            }
+
+            h2 {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Prevent zoom on input focus (iOS) */
+        input {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+</div>
+
+<div class="calculator">
+    <h2>Markup Calculator</h2>
+    
+    <div class="input-group">
+        <label for="cost">Cost Price ($)</label>
+        <input type="number" id="cost" min="0" step="0.01" placeholder="e.g., 50.00" oninput="calculateMarkup()">
+    </div>
+    
+    <div class="input-group">
+        <label for="markup">Markup (%)</label>
+        <input type="number" id="markup" min="0" step="0.1" placeholder="e.g., 20" oninput="calculateMarkup()">
+    </div>
+    
+    <button onclick="calculateMarkup()">Calculate</button>
+
+    <div class="results">
+        <div class="result-row">
+            <span>Profit Amount:</span>
+            <span id="profitAmount">$0.00</span>
+        </div>
+        <div class="result-row">
+            <span>Gross Margin:</span>
+            <span id="grossMargin">0.00%</span>
+        </div>
+        <div class="result-row">
+            <span>Selling Price:</span>
+            <span id="sellingPrice" class="highlight">$0.00</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dark mode toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme');
+
+    function initTheme() {
+        const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = '☀️';
+        } else {
+            document.body.classList.remove('dark-mode');
+            themeToggle.textContent = '🌙';
+        }
+    }
+
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        themeToggle.textContent = isDark ? '☀️' : '🌙';
+    });
+
+    initTheme();
+
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {
+            // Service worker registration failed, but app still works
+        });
+    }
+
+    // Vanilla JavaScript Logic
+    function calculateMarkup() {
+        // 1. Grab values from the input fields
+        const cost = parseFloat(document.getElementById('cost').value);
+        const markupPercentage = parseFloat(document.getElementById('markup').value);
+
+        // 2. Grab the elements where we will display the results
+        const profitEl = document.getElementById('profitAmount');
+        const priceEl = document.getElementById('sellingPrice');
+        const marginEl = document.getElementById('grossMargin');
+
+        // 3. Validation: If inputs are empty or invalid, reset to default and stop
+        if (isNaN(cost) || isNaN(markupPercentage) || cost < 0 || markupPercentage < 0) {
+            profitEl.textContent = '$0.00';
+            priceEl.textContent = '$0.00';
+            marginEl.textContent = '0.00%';
+            return;
+        }
+
+        // 4. Perform the calculations
+        const profit = cost * (markupPercentage / 100);
+        const sellingPrice = cost + profit;
+
+        // Gross Margin is Profit divided by Revenue (Selling Price)
+        // We use a ternary operator to prevent division by zero
+        const grossMargin = sellingPrice > 0 ? (profit / sellingPrice) * 100 : 0;
+
+        // 5. Output the results to the DOM, formatted to 2 decimal places
+        profitEl.textContent = '$' + profit.toFixed(2);
+        priceEl.textContent = '$' + sellingPrice.toFixed(2);
+        marginEl.textContent = grossMargin.toFixed(2) + '%';
+    }
+</script>
+
+</body>
+</html>
