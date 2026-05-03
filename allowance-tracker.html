@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Allowance Tracker</title>
+  <!-- Tailwind CSS v4.2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.0"></script>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @theme {
+      --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      --color-primary: var(--primary-color);
+      --color-bg-main: var(--bg-color);
+      --color-card-bg: var(--card-color);
+    }
+
+    :root {
+      --primary-color: #274690; /* French Blue */
+      --bg-color: #F5F3F5; /* White Smoke */
+      --card-color: rgba(255, 255, 255, 0.85);
+      --text-main: #1B264F; /* Space Indigo */
+      --text-muted: #576CA8; /* Smart Blue */
+      --border-color: rgba(39, 70, 144, 0.1);
+    }
+
+    :root.dark {
+      --primary-color: #576CA8; /* Smart Blue */
+      --bg-color: #1B264F; /* Space Indigo */
+      --card-color: rgba(48, 43, 39, 0.7); /* Graphite based */
+      --text-main: #F5F3F5; /* White Smoke */
+      --text-muted: #576CA8; /* Smart Blue */
+      --border-color: rgba(245, 243, 245, 0.1);
+    }
+
+    body {
+      @apply bg-bg-main text-slate-900 font-sans transition-colors duration-500;
+      color: var(--text-main);
+    }
+
+    .glass {
+      background: var(--card-color);
+      @apply backdrop-blur-md border shadow-xl;
+      border-color: var(--border-color);
+    }
+
+    .progress-bar {
+      @apply h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden;
+    }
+
+    .progress-fill {
+      @apply h-full transition-all duration-1000 ease-linear;
+      background-color: var(--primary-color);
+    }
+
+    [v-cloak] { display: none; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div id="app" class="max-w-4xl mx-auto p-4 md:p-8">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Allowance Tracker</h1>
+        <p class="opacity-60 text-sm">Manage your time-based service quotas</p>
+      </div>
+      <div class="flex flex-wrap gap-2 items-center">
+        <!-- Add Service (Primary) -->
+        <button onclick="openSettingsModal()" class="flex items-center gap-2 px-4 py-2 bg-[var(--text-main)] dark:bg-[var(--text-main)] text-[var(--bg-color)] dark:text-[var(--bg-color)] rounded-lg hover:opacity-90 transition shadow-lg text-sm font-medium border border-transparent">
+          <span class="material-icons text-lg">add</span> <span>Add Service</span>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div class="relative">
+          <button onclick="toggleMenu()" id="menuBtn" class="glass flex items-center justify-center p-2 rounded-lg hover:bg-[var(--bg-color)] dark:hover:bg-[var(--text-main)] transition text-[var(--text-main)] dark:text-[var(--text-main)]">
+            <span class="material-icons text-xl">menu</span>
+          </button>
+          
+          <div id="dropdownMenu" class="hidden absolute left-0 md:right-0 md:left-auto mt-2 w-48 glass rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <button onclick="toggleDetails(); toggleMenu();" class="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/50 dark:hover:bg-slate-800 transition text-left border-b border-slate-100 dark:border-slate-800 text-[var(--text-main)]">
+              <span class="material-icons text-lg" id="detailsIconDropdown">visibility_off</span>
+              <span id="detailsTextDropdown">Show Details</span>
+            </button>
+            <button onclick="exportData(); toggleMenu();" class="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/50 dark:hover:bg-slate-800 transition text-left border-b border-slate-100 dark:border-slate-800 text-[var(--text-main)]">
+              <span class="material-icons text-lg">download</span>
+              <span>Export Data</span>
+            </button>
+            <button onclick="document.getElementById('importInput').click(); toggleMenu();" class="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/50 dark:hover:bg-slate-800 transition text-left text-[var(--text-main)]">
+              <span class="material-icons text-lg">upload</span>
+              <span>Import Data</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dark Mode Toggle -->
+        <button onclick="toggleDarkMode()" class="glass flex items-center justify-center p-2 rounded-lg hover:bg-[var(--bg-color)] dark:hover:bg-[var(--text-main)] transition text-[var(--text-main)] dark:text-[var(--text-main)]" title="Toggle Theme">
+          <span class="material-icons text-xl" id="themeIcon">dark_mode</span>
+        </button>
+
+        <input type="file" id="importInput" class="hidden" accept=".json" onchange="importData(event)">
+      </div>
+    </header>
+
+    <!-- Dashboard Grid -->
+    <div id="serviceList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Services will be injected here -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-slate-400">
+      <span class="material-icons text-6xl mb-4">analytics</span>
+      <p class="text-xl font-medium">No services tracked yet</p>
+      <p>Add a service to start monitoring quotas.</p>
+    </div>
+  </div>
+
+  <!-- Modal Overlay -->
+  <div id="modalOverlay" class="fixed inset-0 bg-[#1B264F]/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+    <div class="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in duration-200 text-[var(--text-main)]">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="modalTitle" class="text-2xl font-bold tracking-tight">Add Service</h2>
+        <button onclick="closeModal()" class="opacity-40 hover:opacity-100 transition">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      
+      <form id="serviceForm" onsubmit="saveService(event)">
+        <input type="hidden" id="serviceId">
+        <div class="space-y-6">
+          <div>
+            <label class="block text-xs uppercase tracking-widest font-bold opacity-60 mb-2">Service Name</label>
+            <input type="text" id="serviceName" required placeholder="e.g. OpenAI API" class="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-[var(--border-color)] rounded-xl focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent outline-none transition text-[var(--text-main)]">
+          </div>
+          
+          <div class="grid grid-cols-1 gap-6">
+            <div>
+              <label class="block text-xs uppercase tracking-widest font-bold opacity-60 mb-2">5h Next Reset</label>
+              <input type="datetime-local" id="nextReset5h" required class="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-[var(--border-color)] rounded-xl focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent outline-none transition text-[var(--text-main)]">
+            </div>
+            <div>
+              <label class="block text-xs uppercase tracking-widest font-bold opacity-60 mb-2">7d Next Reset</label>
+              <input type="datetime-local" id="nextReset7d" required class="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-[var(--border-color)] rounded-xl focus:ring-2 focus:ring-[var(--primary-color)] focus:border-transparent outline-none transition text-[var(--text-main)]">
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-10 flex gap-3">
+          <button type="button" id="deleteBtn" onclick="deleteService()" class="hidden flex-1 px-4 py-3 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500/10 transition font-bold text-sm uppercase tracking-widest">
+            Delete
+          </button>
+          <button type="submit" class="flex-[2] px-4 py-3 bg-[var(--text-main)] text-[var(--bg-color)] rounded-xl hover:opacity-90 transition shadow-xl font-bold text-sm uppercase tracking-widest">
+            Save Service
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Constants
+    const STORAGE_KEY = 'allowance_tracker_data';
+    const SETTINGS_KEY = 'allowance_tracker_settings';
+    const PERIOD_5H = 5 * 60 * 60 * 1000;
+    const PERIOD_7D = 7 * 24 * 60 * 60 * 1000;
+
+    let services = [];
+    let showDetails = false;
+    let darkMode = false;
+
+    // Initialize
+    function init() {
+      // Dark Mode Init
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+        darkMode = true;
+      }
+      updateThemeIcon();
+
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try { services = JSON.parse(stored); } catch (e) { services = []; }
+      }
+      
+      const settings = localStorage.getItem(SETTINGS_KEY);
+      if (settings) {
+        try {
+          const s = JSON.parse(settings);
+          showDetails = s.showDetails;
+        } catch (e) {
+          showDetails = false;
+        }
+      }
+
+      // Handle URL Parameters (External "Post")
+      const params = new URLSearchParams(window.location.search);
+      const importDataStr = params.get('import');
+      const serviceDataStr = params.get('service');
+
+      if (importDataStr) {
+        try {
+          const imported = JSON.parse(decodeURIComponent(importDataStr));
+          if (Array.isArray(imported)) {
+            services = imported;
+            saveToStorage();
+          }
+        } catch (e) { console.error('Failed to import via URL'); }
+      } else if (serviceDataStr) {
+        try {
+          const service = JSON.parse(decodeURIComponent(serviceDataStr));
+          if (service.id && service.name) {
+            const index = services.findIndex(s => s.id === service.id);
+            if (index !== -1) services[index] = { ...services[index], ...service };
+            else services.push(service);
+            saveToStorage();
+          }
+        } catch (e) { console.error('Failed to update service via URL'); }
+        // Clean URL to prevent re-processing on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      updateDetailsUI();
+      syncRollovers();
+      render();
+      
+      // Update progress every 30s
+      setInterval(render, 30000);
+    }
+
+    function toggleDarkMode() {
+      darkMode = !darkMode;
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+      updateThemeIcon();
+    }
+
+    function updateThemeIcon() {
+      const icon = document.getElementById('themeIcon');
+      if (icon) icon.textContent = darkMode ? 'light_mode' : 'dark_mode';
+    }
+
+    function toggleMenu() {
+      const menu = document.getElementById('dropdownMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    // Close menu when clicking outside
+    window.addEventListener('click', (e) => {
+      const menu = document.getElementById('dropdownMenu');
+      const btn = document.getElementById('menuBtn');
+      if (!menu.classList.contains('hidden') && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    function toggleDetails() {
+      showDetails = !showDetails;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ showDetails }));
+      updateDetailsUI();
+      render();
+    }
+
+    function updateDetailsUI() {
+      const iconDropdown = document.getElementById('detailsIconDropdown');
+      const textDropdown = document.getElementById('detailsTextDropdown');
+      
+      if (iconDropdown && textDropdown) {
+        iconDropdown.textContent = showDetails ? 'visibility' : 'visibility_off';
+        textDropdown.textContent = showDetails ? 'Hide Details' : 'Show Details';
+      }
+    }
+
+    // External Messaging Support
+    const channel = new BroadcastChannel('allowance_tracker_sync');
+    channel.onmessage = (event) => {
+      if (event.data.type === 'SYNC_DATA') {
+        services = event.data.services;
+        render();
+      }
+    };
+
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'UPDATE_SERVICE') {
+        const index = services.findIndex(s => s.id === event.data.service.id);
+        if (index !== -1) {
+          services[index] = { ...services[index], ...event.data.service };
+        } else {
+          services.push(event.data.service);
+        }
+        saveToStorage();
+        render();
+      }
+    });
+
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
+      channel.postMessage({ type: 'SYNC_DATA', services });
+    }
+
+    // Render Logic
+    function render() {
+      syncRollovers();
+      const list = document.getElementById('serviceList');
+      const empty = document.getElementById('emptyState');
+      
+      if (services.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        document.title = 'Allowance Tracker';
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      const now = Date.now();
+      let soonestReset = Infinity;
+      let soonestLabel = '';
+
+      list.innerHTML = services.map(s => {
+        const p5h = calculateProgress(s.nextReset5h, PERIOD_5H, now);
+        const p7d = calculateProgress(s.nextReset7d, PERIOD_7D, now);
+        
+        // Track soonest for title bar
+        if (p5h.remaining < soonestReset) {
+          soonestReset = p5h.remaining;
+          soonestLabel = `${s.name} ${formatTimeRemaining(p5h.remaining)}`;
+        }
+        if (p7d.remaining < soonestReset) {
+          soonestReset = p7d.remaining;
+          soonestLabel = `${s.name} ${formatTimeRemaining(p7d.remaining)}`;
+        }
+
+        return `
+          <div class="glass p-6 rounded-2xl relative group transition hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between">
+            <button onclick="openSettingsModal('${s.id}')" class="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
+              <span class="material-icons">settings</span>
+            </button>
+            
+            <h3 class="text-xl font-bold mb-6 pr-8">${s.name}</h3>
+            
+            <div class="space-y-6">
+              <!-- 5h Tracker -->
+              <div class="space-y-2">
+                <div class="flex justify-between text-[10px] uppercase tracking-widest font-bold opacity-60">
+                  <span>5-Hour Quota</span>
+                  <span>${p5h.percent}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${p5h.percent}%"></div>
+                </div>
+                ${showDetails ? `
+                <div class="text-[10px] opacity-40 uppercase tracking-tight flex justify-between pt-1">
+                  <span>Reset: ${new Date(p5h.nextReset).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                  <span>In: ${formatTimeRemaining(p5h.remaining)}</span>
+                </div>
+                ` : ''}
+              </div>
+              
+              <!-- 7d Tracker -->
+              <div class="space-y-2">
+                <div class="flex justify-between text-[10px] uppercase tracking-widest font-bold opacity-60">
+                  <span>7-Day Quota</span>
+                  <span>${p7d.percent}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${p7d.percent}%"></div>
+                </div>
+                ${showDetails ? `
+                <div class="text-[10px] opacity-40 uppercase tracking-tight flex justify-between pt-1">
+                  <span>Reset: ${new Date(p7d.nextReset).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                  <span>In: ${formatTimeRemaining(p7d.remaining)}</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (soonestLabel) {
+        document.title = soonestLabel;
+      }
+    }
+
+    function calculateProgress(nextReset, period, now) {
+      let remaining = nextReset - now;
+      let rolledOver = false;
+      
+      if (remaining < 0) {
+        const elapsedSinceReset = now - nextReset;
+        const periodsPassed = Math.floor(elapsedSinceReset / period) + 1;
+        nextReset = nextReset + (periodsPassed * period);
+        remaining = nextReset - now;
+        rolledOver = true;
+      }
+      
+      const percent = Math.min(100, Math.max(0, Math.floor(((period - remaining) / period) * 100)));
+      
+      return { percent, remaining, nextReset, rolledOver };
+    }
+
+    function syncRollovers() {
+      const now = Date.now();
+      let changed = false;
+
+      services.forEach(s => {
+        const p5h = calculateProgress(s.nextReset5h, PERIOD_5H, now);
+        const p7d = calculateProgress(s.nextReset7d, PERIOD_7D, now);
+
+        if (p5h.rolledOver) {
+          s.nextReset5h = p5h.nextReset;
+          changed = true;
+        }
+        if (p7d.rolledOver) {
+          s.nextReset7d = p7d.nextReset;
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        saveToStorage();
+      }
+    }
+
+    function formatTimeRemaining(ms) {
+      const hours = Math.floor(ms / (1000 * 60 * 60));
+      const days = Math.floor(hours / 24);
+      const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) return `${days}d ${hours % 24}h`;
+      if (hours > 0) return `${hours}h ${mins}m`;
+      return `${mins}m`;
+    }
+
+    // Modal Logic
+    function openSettingsModal(id = null) {
+      const modal = document.getElementById('modalOverlay');
+      const title = document.getElementById('modalTitle');
+      const form = document.getElementById('serviceForm');
+      const deleteBtn = document.getElementById('deleteBtn');
+      
+      form.reset();
+      
+      if (id) {
+        const service = services.find(s => s.id === id);
+        title.textContent = 'Edit Service';
+        document.getElementById('serviceId').value = service.id;
+        document.getElementById('serviceName').value = service.name;
+        document.getElementById('nextReset5h').value = formatDateForInput(service.nextReset5h);
+        document.getElementById('nextReset7d').value = formatDateForInput(service.nextReset7d);
+        deleteBtn.classList.remove('hidden');
+      } else {
+        title.textContent = 'Add Service';
+        document.getElementById('serviceId').value = '';
+        deleteBtn.classList.add('hidden');
+        // Default to current time + period
+        const now = Date.now();
+        document.getElementById('nextReset5h').value = formatDateForInput(now + PERIOD_5H);
+        document.getElementById('nextReset7d').value = formatDateForInput(now + PERIOD_7D);
+      }
+      
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modalOverlay');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function formatDateForInput(timestamp) {
+      const date = new Date(timestamp);
+      const tzOffset = date.getTimezoneOffset() * 60000;
+      return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+    }
+
+    function saveService(e) {
+      e.preventDefault();
+      const id = document.getElementById('serviceId').value;
+      const name = document.getElementById('serviceName').value;
+      const nextReset5h = new Date(document.getElementById('nextReset5h').value).getTime();
+      const nextReset7d = new Date(document.getElementById('nextReset7d').value).getTime();
+      
+      if (id) {
+        const index = services.findIndex(s => s.id === id);
+        services[index] = { id, name, nextReset5h, nextReset7d };
+      } else {
+        services.push({
+          id: Math.random().toString(36).substr(2, 9),
+          name,
+          nextReset5h,
+          nextReset7d
+        });
+      }
+      
+      saveToStorage();
+      render();
+      closeModal();
+    }
+
+    function deleteService() {
+      const id = document.getElementById('serviceId').value;
+      if (confirm('Are you sure you want to delete this service?')) {
+        services = services.filter(s => s.id !== id);
+        saveToStorage();
+        render();
+        closeModal();
+      }
+    }
+
+    // Export/Import
+    function exportData() {
+      const blob = new Blob([JSON.stringify(services, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `allowance-tracker-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            services = imported;
+            saveToStorage();
+            render();
+            alert('Data imported successfully!');
+          } else {
+            alert('Invalid file format.');
+          }
+        } catch (err) {
+          alert('Failed to parse JSON.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset input
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>
