@@ -172,7 +172,7 @@
     const PERIOD_7D = 7 * 24 * 60 * 60 * 1000;
 
     let services = [];
-    let showDetails = false;
+    let showDetails = true;
     let darkMode = false;
     let rotationIndex = 0;
 
@@ -195,9 +195,9 @@
       if (settings) {
         try {
           const s = JSON.parse(settings);
-          showDetails = s.showDetails;
+          if (s.showDetails !== undefined) showDetails = s.showDetails;
         } catch (e) {
-          showDetails = false;
+          showDetails = true;
         }
       }
 
@@ -209,8 +209,24 @@
       if (importDataStr) {
         try {
           const imported = JSON.parse(decodeURIComponent(importDataStr));
+          let importedServices = [];
           if (Array.isArray(imported)) {
-            services = imported;
+            importedServices = imported;
+          } else if (imported.services && Array.isArray(imported.services)) {
+            importedServices = imported.services;
+            if (imported.settings && imported.settings.showDetails !== undefined) {
+              showDetails = imported.settings.showDetails;
+            }
+          }
+          
+          if (importedServices.length > 0) {
+            services = importedServices.map(s => ({
+              ...s,
+              id: s.id || Math.random().toString(36).substr(2, 9),
+              nextReset5h: s.nextReset5h || (Date.now() + PERIOD_5H),
+              nextReset7d: s.nextReset7d || (Date.now() + PERIOD_7D)
+            }));
+            showDetails = true; // Show details on URL import
             saveToStorage();
           }
         } catch (e) { console.error('Failed to import via URL'); }
@@ -219,8 +235,13 @@
           const service = JSON.parse(decodeURIComponent(serviceDataStr));
           if (service.id && service.name) {
             const index = services.findIndex(s => s.id === service.id);
-            if (index !== -1) services[index] = { ...services[index], ...service };
-            else services.push(service);
+            const sanitizedService = {
+              ...service,
+              nextReset5h: service.nextReset5h || (Date.now() + PERIOD_5H),
+              nextReset7d: service.nextReset7d || (Date.now() + PERIOD_7D)
+            };
+            if (index !== -1) services[index] = { ...services[index], ...sanitizedService };
+            else services.push(sanitizedService);
             saveToStorage();
           }
         } catch (e) { console.error('Failed to update service via URL'); }
@@ -532,7 +553,14 @@
 
     // Export/Import
     function exportData() {
-      const blob = new Blob([JSON.stringify(services, null, 2)], { type: 'application/json' });
+      const exportObj = {
+        services,
+        settings: {
+          showDetails,
+          darkMode
+        }
+      };
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -549,16 +577,44 @@
       reader.onload = (e) => {
         try {
           const imported = JSON.parse(e.target.result);
-          if (Array.isArray(imported)) {
-            services = imported;
-            saveToStorage();
-            render();
-            alert('Data imported successfully!');
+          let importedServices = [];
+          
+          // Handle both legacy array-only and new object-with-settings formats
+          if (imported.services && Array.isArray(imported.services)) {
+            importedServices = imported.services;
+            if (imported.settings) {
+              if (imported.settings.showDetails !== undefined) showDetails = imported.settings.showDetails;
+              if (imported.settings.darkMode !== undefined) {
+                darkMode = imported.settings.darkMode;
+                document.documentElement.classList.toggle('dark', darkMode);
+                updateThemeIcon();
+              }
+            }
+          } else if (Array.isArray(imported)) {
+            importedServices = imported;
+            // For legacy imports, default to showing details
+            showDetails = true;
           } else {
             alert('Invalid file format.');
+            return;
           }
+
+          // Ensure all services have required reset timestamps
+          services = importedServices.map(s => ({
+            ...s,
+            id: s.id || Math.random().toString(36).substr(2, 9),
+            nextReset5h: s.nextReset5h || (Date.now() + PERIOD_5H),
+            nextReset7d: s.nextReset7d || (Date.now() + PERIOD_7D)
+          }));
+
+          updateDetailsUI();
+          saveToStorage();
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify({ showDetails }));
+          render();
+          alert('Data imported successfully!');
         } catch (err) {
           alert('Failed to parse JSON.');
+          console.error(err);
         }
       };
       reader.readAsText(file);
