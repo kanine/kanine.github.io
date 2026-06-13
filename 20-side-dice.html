@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>D20 Roller</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: radial-gradient(ellipse at 50% 30%, #1a1035 0%, #080810 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Georgia', serif;
+  user-select: none;
+  touch-action: none;
+}
+
+#scene {
+  position: relative;
+  width: 340px;
+  height: 340px;
+}
+
+#scene canvas {
+  position: absolute;
+  top: 0; left: 0;
+  border-radius: 12px;
+}
+
+/* Floor glow */
+#scene::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(100,60,220,0.3) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+#result-wrap {
+  margin-top: 20px;
+  text-align: center;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+#result-num {
+  font-size: 64px;
+  font-weight: bold;
+  color: #fff;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.6) translateY(10px);
+  transition: opacity 0.35s cubic-bezier(.34,1.56,.64,1), transform 0.35s cubic-bezier(.34,1.56,.64,1);
+  text-shadow: 0 0 30px rgba(139,92,246,0.8), 0 2px 8px rgba(0,0,0,0.9);
+  letter-spacing: -2px;
+}
+#result-num.show { opacity:1; transform:scale(1) translateY(0); }
+#result-num.crit  { color:#ffd700; text-shadow:0 0 30px rgba(255,200,0,0.9),0 0 60px rgba(255,150,0,0.5),0 2px 8px rgba(0,0,0,0.9); animation: critBurst .5s ease-out; }
+#result-num.fumble{ color:#ff4444; text-shadow:0 0 30px rgba(255,60,60,0.9),0 2px 8px rgba(0,0,0,0.9); }
+
+@keyframes critBurst {
+  0%   { transform: scale(1.5); }
+  60%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+#result-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  font-family: 'Helvetica Neue', sans-serif;
+  font-weight: 300;
+  opacity: 0;
+  transition: opacity 0.3s ease 0.15s;
+}
+#result-label.show { opacity:1; }
+#result-label.crit   { color: rgba(255,215,0,0.7); }
+#result-label.fumble { color: rgba(255,80,80,0.6); }
+
+#hint {
+  margin-top: 16px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+  font-family: 'Helvetica Neue', sans-serif;
+  font-weight: 300;
+  transition: opacity 0.4s;
+}
+#hint.hide { opacity:0; pointer-events:none; }
+
+#history {
+  margin-top: 14px;
+  display: flex;
+  gap: 6px;
+  min-height: 30px;
+  align-items: center;
+}
+.pip {
+  width: 26px; height: 26px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: bold;
+  font-family: 'Helvetica Neue', sans-serif;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .25s, transform .25s;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.pip.in { opacity:1; transform:translateY(0); }
+.pip.p-crit   { background:rgba(255,215,0,0.15);  color:#ffd700; border-color:rgba(255,215,0,0.3); }
+.pip.p-fumble { background:rgba(255,60,60,0.15);  color:#ff6666; border-color:rgba(255,60,60,0.3); }
+.pip.p-normal { background:rgba(100,60,220,0.15); color:rgba(255,255,255,0.6); border-color:rgba(100,60,220,0.25); }
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <canvas id="c" width="340" height="340"></canvas>
+</div>
+
+<div id="result-wrap">
+  <div id="result-num">20</div>
+  <div id="result-label">roll result</div>
+</div>
+
+<div id="hint">tap to roll</div>
+<div id="history"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ICOSAHEDRON GEOMETRY  (computed from Python, verified)
+// ═══════════════════════════════════════════════════════════════
+const PHI = (1 + Math.sqrt(5)) / 2;
+
+// 12 normalised vertices
+const ICO_VERTS_RAW = [
+  [-1, PHI,0],[1, PHI,0],[-1,-PHI,0],[1,-PHI,0],
+  [0,-1, PHI],[0, 1, PHI],[0,-1,-PHI],[0, 1,-PHI],
+  [PHI,0,-1],[PHI,0, 1],[-PHI,0,-1],[-PHI,0, 1]
+];
+function vNorm(v){ const l=Math.hypot(...v); return v.map(x=>x/l); }
+const ICO_VERTS = ICO_VERTS_RAW.map(vNorm);
+
+// 20 faces – winding order gives outward normals
+const ICO_FACES = [
+  [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
+  [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
+  [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
+  [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]
+];
+
+// Face numbers  (opposite faces sum to 21)
+const FACE_NUMBERS = [1,2,3,4,5,6,7,8,9,10,17,18,19,20,16,12,11,15,14,13];
+
+// Pre-computed rotation (degrees) to apply in canvas when drawing each face's number
+// so the numeral reads upright when that face is on top
+const FACE_ROT = [-37.8,-60.0,60.0,37.8,0.0,37.8,30.0,60.0,90.0,82.2,
+                   142.2,120.0,-120.0,-142.2,180.0,-150.0,-142.2,-97.8,-90.0,-120.0];
+
+// ═══════════════════════════════════════════════════════════════
+//  FACE TEXTURES  – one canvas texture per face
+// ═══════════════════════════════════════════════════════════════
+function makeTex(num, rotDeg) {
+  const S = 256;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const ctx = cv.getContext('2d');
+
+  const isCrit   = num === 20;
+  const isFumble = num === 1;
+
+  // --- Background: dark with subtle radial glow ---
+  const bg = ctx.createRadialGradient(S/2,S/2,20, S/2,S/2,140);
+  if (isCrit) {
+    bg.addColorStop(0,'#2d1e00'); bg.addColorStop(1,'#110900');
+  } else if (isFumble) {
+    bg.addColorStop(0,'#200000'); bg.addColorStop(1,'#0d0000');
+  } else {
+    bg.addColorStop(0,'#1c1050'); bg.addColorStop(1,'#09061a');
+  }
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,S,S);
+
+  // --- Triangle border ---
+  // Equilateral triangle inscribed in circle of radius 108, centred at (128,128)
+  const R = 108, cx = 128, cy = 128;
+  // Apex upward (π/2), then every 120°
+  ctx.beginPath();
+  for (let i=0;i<3;i++){
+    const a = Math.PI/2 + i*2*Math.PI/3;
+    i===0 ? ctx.moveTo(cx+R*Math.cos(a), cy-R*Math.sin(a))
+           : ctx.lineTo(cx+R*Math.cos(a), cy-R*Math.sin(a));
+  }
+  ctx.closePath();
+  ctx.strokeStyle = isCrit   ? 'rgba(255,200,0,0.55)'
+                  : isFumble ? 'rgba(255,80,80,0.5)'
+                  : 'rgba(130,80,255,0.4)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Inner glow clip to triangle
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<3;i++){
+    const a = Math.PI/2 + i*2*Math.PI/3;
+    i===0 ? ctx.moveTo(cx+R*Math.cos(a), cy-R*Math.sin(a))
+           : ctx.lineTo(cx+R*Math.cos(a), cy-R*Math.sin(a));
+  }
+  ctx.closePath();
+  ctx.clip();
+  const glow = ctx.createRadialGradient(cx,cy,0,cx,cy,90);
+  if (isCrit)        { glow.addColorStop(0,'rgba(255,180,0,0.18)'); glow.addColorStop(1,'rgba(0,0,0,0)'); }
+  else if (isFumble) { glow.addColorStop(0,'rgba(255,40,40,0.18)'); glow.addColorStop(1,'rgba(0,0,0,0)'); }
+  else               { glow.addColorStop(0,'rgba(100,60,255,0.15)'); glow.addColorStop(1,'rgba(0,0,0,0)'); }
+  ctx.fillStyle = glow;
+  ctx.fillRect(0,0,S,S);
+  ctx.restore();
+
+  // --- Number, rotated by rotDeg around centre ---
+  ctx.save();
+  ctx.translate(cx, cy + 8); // slight downward nudge to visually centre in triangle
+  ctx.rotate(rotDeg * Math.PI / 180);
+
+  const numStr = String(num);
+  const fontSize = numStr.length > 1 ? 92 : 106;
+  ctx.font = `bold ${fontSize}px Georgia, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const col = isCrit ? '#ffd700' : isFumble ? '#ff5555' : '#ddd4ff';
+  ctx.shadowColor = isCrit   ? 'rgba(255,200,0,0.9)'
+                  : isFumble ? 'rgba(255,60,60,0.9)'
+                  : 'rgba(120,80,255,0.8)';
+  ctx.shadowBlur = 22;
+  ctx.fillStyle = col;
+  ctx.fillText(numStr, 0, 0);
+
+  // Underline for 6 and 9
+  if (num === 6 || num === 9) {
+    const uw = numStr.length > 1 ? 44 : 32;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 6;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(-uw, 52); ctx.lineTo(uw, 52);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  THREE.JS SETUP
+// ═══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(340,340);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x000000,0);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40,1,0.1,100);
+camera.position.set(0,3.5,6.5);
+camera.lookAt(0,0,0);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+
+const keyL = new THREE.DirectionalLight(0xd0c0ff, 1.6);
+keyL.position.set(4,8,6);
+keyL.castShadow = true;
+keyL.shadow.mapSize.set(1024,1024);
+keyL.shadow.camera.near = 0.5;
+keyL.shadow.camera.far = 40;
+keyL.shadow.camera.left = -6;
+keyL.shadow.camera.right = 6;
+keyL.shadow.camera.top = 6;
+keyL.shadow.camera.bottom = -6;
+scene.add(keyL);
+
+const fillL = new THREE.DirectionalLight(0x4060ff,0.4);
+fillL.position.set(-4,-2,3);
+scene.add(fillL);
+
+const rimL = new THREE.PointLight(0x8b5cf6,1.2,20);
+rimL.position.set(0,-3,-4);
+scene.add(rimL);
+
+// Floor (invisible, receives shadows)
+const floorGeo = new THREE.PlaneGeometry(20,20);
+const floorMat = new THREE.ShadowMaterial({ opacity:0.35 });
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.position.y = -1.5;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Floor glow disc
+const glowGeo = new THREE.CircleGeometry(1.4,48);
+const glowMat = new THREE.MeshBasicMaterial({
+  color: 0x6030cc, transparent:true, opacity:0.0, side: THREE.FrontSide
+});
+const glowDisc = new THREE.Mesh(glowGeo, glowMat);
+glowDisc.rotation.x = -Math.PI/2;
+glowDisc.position.y = -1.49;
+scene.add(glowDisc);
+
+// ═══════════════════════════════════════════════════════════════
+//  BUILD D20 MESH with per-face UV-mapped textures
+// ═══════════════════════════════════════════════════════════════
+// We create a BufferGeometry manually: each face gets its own 3 vertices
+// and a separate material slot.
+
+function buildD20() {
+  const geo = new THREE.BufferGeometry();
+  const NFACES = 20;
+  const pos = new Float32Array(NFACES * 3 * 3);  // 20 faces × 3 verts × xyz
+  const uvs = new Float32Array(NFACES * 3 * 2);  // 20 faces × 3 verts × uv
+  const nrm = new Float32Array(NFACES * 3 * 3);
+
+  // Standard equilateral triangle UVs (vertex order: v0=right, v1=top-ish, v2=left-ish)
+  // We define a canonical UV triangle and let the texture rotation handle orientation.
+  // Canonical layout: v0 at right, v1 top, v2 left of centre (matches our x_axis = v0 direction)
+  // After texture rotation the number will appear upright.
+  const R_uv = 0.42; // UV radius, keeps number inside triangle with margin
+  const UV_TRI = [
+    [0.5 + R_uv,             0.5],                              // v0 – right
+    [0.5 + R_uv*Math.cos(2*Math.PI/3), 0.5 + R_uv*Math.sin(2*Math.PI/3)], // v1
+    [0.5 + R_uv*Math.cos(4*Math.PI/3), 0.5 + R_uv*Math.sin(4*Math.PI/3)], // v2
+  ];
+
+  const mats = [];
+
+  for (let fi = 0; fi < NFACES; fi++) {
+    const [ia, ib, ic] = ICO_FACES[fi];
+    const va = ICO_VERTS[ia], vb = ICO_VERTS[ib], vc = ICO_VERTS[ic];
+
+    // Face normal (outward)
+    const nx = (va[0]+vb[0]+vc[0])/3;
+    const ny = (va[1]+vb[1]+vc[1])/3;
+    const nz = (va[2]+vb[2]+vc[2])/3;
+    const nl = Math.hypot(nx,ny,nz);
+
+    const base = fi * 9; // index into pos/nrm
+    const ubase = fi * 6;
+
+    // Scale vertices to radius 1.5
+    const S = 1.5;
+    pos[base+0]=va[0]*S; pos[base+1]=va[1]*S; pos[base+2]=va[2]*S;
+    pos[base+3]=vb[0]*S; pos[base+4]=vb[1]*S; pos[base+5]=vb[2]*S;
+    pos[base+6]=vc[0]*S; pos[base+7]=vc[1]*S; pos[base+8]=vc[2]*S;
+
+    for (let k=0;k<3;k++){
+      nrm[base+k*3+0]=nx/nl; nrm[base+k*3+1]=ny/nl; nrm[base+k*3+2]=nz/nl;
+    }
+
+    uvs[ubase+0]=UV_TRI[0][0]; uvs[ubase+1]=UV_TRI[0][1];
+    uvs[ubase+2]=UV_TRI[1][0]; uvs[ubase+3]=UV_TRI[1][1];
+    uvs[ubase+4]=UV_TRI[2][0]; uvs[ubase+5]=UV_TRI[2][1];
+
+    geo.addGroup(fi*3, 3, fi);
+
+    // Texture for this face – rotation baked into canvas drawing
+    const tex = makeTex(FACE_NUMBERS[fi], FACE_ROT[fi]);
+    mats.push(new THREE.MeshStandardMaterial({
+      map: tex,
+      roughness: 0.3,
+      metalness: 0.3,
+      envMapIntensity: 0.5,
+    }));
+  }
+
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('normal',   new THREE.BufferAttribute(nrm,3));
+  geo.setAttribute('uv',       new THREE.BufferAttribute(uvs,2));
+
+  return { geo, mats };
+}
+
+const { geo: diceGeo, mats: diceMats } = buildD20();
+const dice = new THREE.Mesh(diceGeo, diceMats);
+dice.castShadow = true;
+dice.position.y = 3; // start above floor
+scene.add(dice);
+
+// Subtle wireframe overlay
+const wireMat = new THREE.MeshBasicMaterial({
+  color:0x9b78ff, wireframe:true, transparent:true, opacity:0.12
+});
+const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(1.502,0), wireMat);
+scene.add(wire);
+
+// ═══════════════════════════════════════════════════════════════
+//  FACE NORMALS  (world space, for settle detection)
+// ═══════════════════════════════════════════════════════════════
+const FACE_NORMALS_LOCAL = ICO_FACES.map(([ia,ib,ic]) => {
+  const va=ICO_VERTS[ia], vb=ICO_VERTS[ib], vc=ICO_VERTS[ic];
+  return vNorm([(va[0]+vb[0]+vc[0])/3,(va[1]+vb[1]+vc[1])/3,(va[2]+vb[2]+vc[2])/3]);
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  PHYSICS  (custom minimal rigid-body for a convex polytope)
+// ═══════════════════════════════════════════════════════════════
+const FLOOR_Y    = -1.5 + 1.5; // floor pos + dice radius
+const GRAVITY    = -18;
+const RESTITUTION = 0.38;
+const ANG_DAMP   = 0.88;
+const LIN_DAMP   = 0.82;
+const SETTLE_VEL = 0.04;
+
+let pos3  = new THREE.Vector3(0, 3, 0);
+let vel   = new THREE.Vector3();
+let angVel= new THREE.Vector3();
+let quat  = new THREE.Quaternion();
+let physActive = false;
+let settleTimer = 0;
+let targetFaceIdx = 0; // which face we want on top (for fake-physics result)
+let finalQ = new THREE.Quaternion();
+
+// Pre-determine result, then bias the roll to land on it
+function pickResult() {
+  return Math.floor(Math.random() * 20);  // face index
+}
+
+function quaternionFaceUp(faceIdx) {
+  // Rotate so FACE_NORMALS_LOCAL[faceIdx] points straight UP (+Y)
+  const n = new THREE.Vector3(...FACE_NORMALS_LOCAL[faceIdx]);
+  const up = new THREE.Vector3(0,1,0);
+  const q = new THREE.Quaternion().setFromUnitVectors(n, up);
+  // Add random spin around Y so die doesn't always land in same rotational pose
+  const yRot = new THREE.Quaternion().setFromAxisAngle(up, Math.random()*Math.PI*2);
+  return yRot.multiply(q);
+}
+
+function startRoll() {
+  if (physActive) return;
+  physActive = true;
+  settleTimer = 0;
+
+  // Pre-pick result
+  targetFaceIdx = pickResult();
+  finalQ = quaternionFaceUp(targetFaceIdx);
+
+  // Launch from above with random tumble
+  pos3.set((Math.random()-0.5)*0.6, 4.5, (Math.random()-0.5)*0.3);
+  vel.set((Math.random()-0.5)*2, -4 - Math.random()*3, (Math.random()-0.5)*1.5);
+  angVel.set(
+    (Math.random()-0.5)*22,
+    (Math.random()-0.5)*22,
+    (Math.random()-0.5)*14
+  );
+  quat.setFromEuler(new THREE.Euler(
+    Math.random()*Math.PI*2,
+    Math.random()*Math.PI*2,
+    Math.random()*Math.PI*2
+  ));
+
+  hideResult();
+  document.getElementById('hint').classList.add('hide');
+}
+
+function stepPhysics(dt) {
+  if (!physActive) return;
+
+  // Clamp dt
+  dt = Math.min(dt, 0.033);
+
+  // Gravity
+  vel.y += GRAVITY * dt;
+
+  // Integrate position
+  pos3.addScaledVector(vel, dt);
+
+  // Floor collision
+  if (pos3.y < FLOOR_Y) {
+    pos3.y = FLOOR_Y;
+    if (vel.y < 0) {
+      vel.y *= -RESTITUTION;
+      vel.x *= 0.75;
+      vel.z *= 0.75;
+      // Random torque on bounce
+      angVel.x += (Math.random()-0.5)*4;
+      angVel.z += (Math.random()-0.5)*4;
+    }
+  }
+
+  // Damping (stronger when near floor)
+  const onFloor = pos3.y < FLOOR_Y + 0.05;
+  const ld = onFloor ? LIN_DAMP  : 0.99;
+  const ad = onFloor ? ANG_DAMP  : 0.995;
+  vel.multiplyScalar(Math.pow(ld, dt*60));
+  angVel.multiplyScalar(Math.pow(ad, dt*60));
+
+  // Integrate rotation
+  const angle = angVel.length() * dt;
+  if (angle > 0.0001) {
+    const axis = angVel.clone().normalize();
+    const dq = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    quat.premultiply(dq);
+    quat.normalize();
+  }
+
+  // Check if essentially stopped
+  const speed = vel.length() + angVel.length();
+  if (onFloor && speed < SETTLE_VEL) {
+    settleTimer += dt;
+  } else {
+    settleTimer = 0;
+  }
+
+  // After settled long enough, snap to exact target orientation
+  if (settleTimer > 0.25) {
+    physActive = false;
+    // Smooth snap to correct face
+    snapToFace();
+  }
+
+  // Apply to mesh
+  dice.position.copy(pos3);
+  dice.quaternion.copy(quat);
+  wire.position.copy(pos3);
+  wire.quaternion.copy(quat);
+
+  // Floor glow based on proximity
+  const dist = pos3.y - FLOOR_Y;
+  glowDisc.material.opacity = Math.max(0, 0.25 - dist*0.08);
+  glowDisc.position.x = pos3.x;
+  glowDisc.position.z = pos3.z;
+}
+
+// Snap animation to correct face
+let snapping = false;
+let snapStart = 0;
+let snapFrom = new THREE.Quaternion();
+const SNAP_DUR = 320; // ms
+
+function snapToFace() {
+  snapping = true;
+  snapStart = performance.now();
+  snapFrom.copy(quat);
+  // Keep the physics position, just fix rotation
+  pos3.y = FLOOR_Y;
+}
+
+function updateSnap(now) {
+  if (!snapping) return;
+  const t = Math.min((now - snapStart) / SNAP_DUR, 1);
+  const ease = 1 - Math.pow(1-t, 3);
+  quat.slerpQuaternions(snapFrom, finalQ, ease);
+  dice.quaternion.copy(quat);
+  wire.quaternion.copy(quat);
+  dice.position.y = FLOOR_Y;
+  wire.position.y = FLOOR_Y;
+  glowDisc.material.opacity = 0.28;
+
+  if (t >= 1) {
+    snapping = false;
+    onSettled();
+  }
+}
+
+function onSettled() {
+  const num = FACE_NUMBERS[targetFaceIdx];
+  showResult(num);
+  addHistory(num);
+  setTimeout(()=> document.getElementById('hint').classList.remove('hide'), 700);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  IDLE ANIMATION
+// ═══════════════════════════════════════════════════════════════
+const idleAxis = new THREE.Vector3(0.2,1,0.15).normalize();
+let idleAngle = 0;
+let idlePos = new THREE.Vector3(0, 0, 0);
+const idleFloat = { phase: 0 };
+
+function updateIdle(dt) {
+  idleAngle += dt * 0.35;
+  idleFloat.phase += dt * 1.1;
+  const floatY = Math.sin(idleFloat.phase) * 0.08;
+  const q = new THREE.Quaternion().setFromAxisAngle(idleAxis, idleAngle);
+  dice.quaternion.copy(q);
+  wire.quaternion.copy(q);
+  dice.position.set(0, floatY, 0);
+  wire.position.set(0, floatY, 0);
+  glowDisc.material.opacity = 0.08 + Math.sin(idleFloat.phase)*0.03;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RESULT UI
+// ═══════════════════════════════════════════════════════════════
+const resultNum   = document.getElementById('result-num');
+const resultLabel = document.getElementById('result-label');
+const rollHistory = [];
+const MAX_HIST = 7;
+
+function label(n) {
+  if (n===20) return 'natural twenty ✦';
+  if (n===1)  return 'critical fumble';
+  if (n>=17)  return 'exceptional';
+  if (n>=13)  return 'solid roll';
+  if (n>=8)   return 'average';
+  return 'rough luck';
+}
+
+function showResult(n) {
+  resultNum.className = '';
+  resultLabel.className = '';
+  resultNum.textContent = n;
+  resultLabel.textContent = label(n);
+  void resultNum.offsetWidth;
+  const cls = n===20 ? 'crit' : n===1 ? 'fumble' : '';
+  resultNum.classList.add('show', ...(cls?[cls]:[]));
+  resultLabel.classList.add('show', ...(cls?[cls]:[]));
+}
+
+function hideResult() {
+  resultNum.classList.remove('show','crit','fumble');
+  resultLabel.classList.remove('show','crit','fumble');
+}
+
+function addHistory(n) {
+  rollHistory.unshift(n);
+  if (rollHistory.length > MAX_HIST) rollHistory.pop();
+  const hist = document.getElementById('history');
+  hist.innerHTML = '';
+  rollHistory.forEach((v, i) => {
+    const d = document.createElement('div');
+    d.className = 'pip ' + (v===20?'p-crit':v===1?'p-fumble':'p-normal');
+    d.textContent = v;
+    hist.appendChild(d);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('in')));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════════════════════════════════
+let last = performance.now();
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+
+  if (physActive) {
+    stepPhysics(dt);
+  } else if (snapping) {
+    updateSnap(now);
+  } else {
+    updateIdle(dt);
+  }
+
+  renderer.render(scene, camera);
+}
+animate(performance.now());
+
+// ═══════════════════════════════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════════════════════════════
+canvas.addEventListener('click', startRoll);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); startRoll(); }, { passive:false });
+
+// ═══════════════════════════════════════════════════════════════
+//  RESPONSIVE SCALE
+// ═══════════════════════════════════════════════════════════════
+function onResize() {
+  const max = Math.min(window.innerWidth - 24, 380);
+  const s = max / 340;
+  const scene = document.getElementById('scene');
+  scene.style.transform = `scale(${s})`;
+  scene.style.transformOrigin = 'top center';
+  scene.style.marginBottom = `${(340*s - 340)}px`;
+}
+window.addEventListener('resize', onResize);
+onResize();
+</script>
+</body>
+</html>
