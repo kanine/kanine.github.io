@@ -281,7 +281,9 @@ renderer.setClearColor(0x000000,0);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(40,1,0.1,100);
-camera.position.set(0,3.5,6.5);
+const DEFAULT_CAMERA_POS = new THREE.Vector3(0,3.5,6.5);
+const DEFAULT_CAMERA_UP = new THREE.Vector3(0,1,0);
+camera.position.copy(DEFAULT_CAMERA_POS);
 camera.lookAt(0,0,0);
 
 // Lighting
@@ -427,40 +429,59 @@ const GRAVITY    = -18;
 const RESTITUTION = 0.38;
 const ANG_DAMP   = 0.88;
 const LIN_DAMP   = 0.82;
-const SETTLE_VEL = 0.04;
+const SETTLE_VEL = 0.08;
+const SETTLE_HOLD = 0.08;
+const REST_IMPACT_VEL = 0.65;
 
 let pos3  = new THREE.Vector3(0, 3, 0);
 let vel   = new THREE.Vector3();
 let angVel= new THREE.Vector3();
 let quat  = new THREE.Quaternion();
 let physActive = false;
+let resultShowing = false;
+let cameraRevealActive = false;
 let settleTimer = 0;
-let targetFaceIdx = 0; // which face we want on top (for fake-physics result)
+let settledFaceIdx = 0;
 let finalQ = new THREE.Quaternion();
 
-// Pre-determine result, then bias the roll to land on it
-function pickResult() {
-  return Math.floor(Math.random() * 20);  // face index
+function resetCamera() {
+  camera.up.copy(DEFAULT_CAMERA_UP);
+  camera.position.copy(DEFAULT_CAMERA_POS);
+  camera.lookAt(0,0,0);
 }
 
-function quaternionFaceUp(faceIdx) {
+function getTopFaceIdx(q) {
+  const up = new THREE.Vector3(0,1,0);
+  let bestIdx = 0;
+  let bestDot = -Infinity;
+
+  FACE_NORMALS_LOCAL.forEach((normal, idx) => {
+    const worldNormal = new THREE.Vector3(...normal).applyQuaternion(q);
+    const dot = worldNormal.dot(up);
+    if (dot > bestDot) {
+      bestDot = dot;
+      bestIdx = idx;
+    }
+  });
+
+  return bestIdx;
+}
+
+function quaternionFaceUp(faceIdx, baseQ = quat) {
   // Rotate so FACE_NORMALS_LOCAL[faceIdx] points straight UP (+Y)
-  const n = new THREE.Vector3(...FACE_NORMALS_LOCAL[faceIdx]);
+  const n = new THREE.Vector3(...FACE_NORMALS_LOCAL[faceIdx]).applyQuaternion(baseQ);
   const up = new THREE.Vector3(0,1,0);
   const q = new THREE.Quaternion().setFromUnitVectors(n, up);
-  // Add random spin around Y so die doesn't always land in same rotational pose
-  const yRot = new THREE.Quaternion().setFromAxisAngle(up, Math.random()*Math.PI*2);
-  return yRot.multiply(q);
+  return q.multiply(baseQ);
 }
 
 function startRoll() {
-  if (physActive) return;
+  if (physActive || snapping || cameraRevealActive) return;
   physActive = true;
+  resultShowing = false;
+  cameraRevealActive = false;
   settleTimer = 0;
-
-  // Pre-pick result
-  targetFaceIdx = pickResult();
-  finalQ = quaternionFaceUp(targetFaceIdx);
+  resetCamera();
 
   // Launch from above with random tumble
   pos3.set((Math.random()-0.5)*0.6, 4.5, (Math.random()-0.5)*0.3);
@@ -496,12 +517,16 @@ function stepPhysics(dt) {
   if (pos3.y < FLOOR_Y) {
     pos3.y = FLOOR_Y;
     if (vel.y < 0) {
-      vel.y *= -RESTITUTION;
+      if (Math.abs(vel.y) < REST_IMPACT_VEL) {
+        vel.y = 0;
+      } else {
+        vel.y *= -RESTITUTION;
+        // Random torque on bounce
+        angVel.x += (Math.random()-0.5)*4;
+        angVel.z += (Math.random()-0.5)*4;
+      }
       vel.x *= 0.75;
       vel.z *= 0.75;
-      // Random torque on bounce
-      angVel.x += (Math.random()-0.5)*4;
-      angVel.z += (Math.random()-0.5)*4;
     }
   }
 
@@ -522,17 +547,19 @@ function stepPhysics(dt) {
   }
 
   // Check if essentially stopped
-  const speed = vel.length() + angVel.length();
+  const horizontalSpeed = Math.hypot(vel.x, vel.z);
+  const speed = (onFloor ? horizontalSpeed : vel.length()) + angVel.length();
   if (onFloor && speed < SETTLE_VEL) {
     settleTimer += dt;
   } else {
     settleTimer = 0;
   }
 
-  // After settled long enough, snap to exact target orientation
-  if (settleTimer > 0.25) {
+  // After settled long enough, square up the face that actually landed on top.
+  if (settleTimer > SETTLE_HOLD) {
     physActive = false;
-    // Smooth snap to correct face
+    settledFaceIdx = getTopFaceIdx(quat);
+    finalQ = quaternionFaceUp(settledFaceIdx);
     snapToFace();
   }
 
@@ -553,7 +580,7 @@ function stepPhysics(dt) {
 let snapping = false;
 let snapStart = 0;
 let snapFrom = new THREE.Quaternion();
-const SNAP_DUR = 320; // ms
+const SNAP_DUR = 850; // ms
 
 function snapToFace() {
   snapping = true;
@@ -566,7 +593,7 @@ function snapToFace() {
 function updateSnap(now) {
   if (!snapping) return;
   const t = Math.min((now - snapStart) / SNAP_DUR, 1);
-  const ease = 1 - Math.pow(1-t, 3);
+  const ease = easeOut(t);
   quat.slerpQuaternions(snapFrom, finalQ, ease);
   dice.quaternion.copy(quat);
   wire.quaternion.copy(quat);
@@ -581,7 +608,85 @@ function updateSnap(now) {
 }
 
 function onSettled() {
-  const num = FACE_NUMBERS[targetFaceIdx];
+  resultShowing = true;
+  startCameraReveal();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SETTLED CAMERA REVEAL
+// ═══════════════════════════════════════════════════════════════
+let cameraRevealStart = 0;
+let cameraRevealAngle = 0;
+let cameraRevealTarget = new THREE.Vector3();
+let cameraRevealTop = new THREE.Vector3();
+const CAMERA_MOVE_DUR = 1900; // ms
+const CAMERA_TOP_SPIN_DUR = 3000; // ms
+const CAMERA_REVEAL_DUR = CAMERA_MOVE_DUR + CAMERA_TOP_SPIN_DUR;
+const CAMERA_ORBIT_PORTION = 0.58;
+const CAMERA_TOP_SPIN_ANGLE = Math.PI * 0.35;
+
+function easeInOut(t) {
+  return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+}
+
+function easeOut(t) {
+  return 1 - Math.pow(1-t, 3);
+}
+
+function startCameraReveal() {
+  cameraRevealActive = true;
+  cameraRevealStart = performance.now();
+  cameraRevealTarget.set(pos3.x, FLOOR_Y + 0.45, pos3.z);
+  cameraRevealTop.set(pos3.x, FLOOR_Y + 6.2, pos3.z + 0.001);
+  cameraRevealAngle = Math.atan2(
+    camera.position.z - cameraRevealTarget.z,
+    camera.position.x - cameraRevealTarget.x
+  );
+}
+
+function updateCameraReveal(now) {
+  if (!cameraRevealActive) return;
+  const elapsed = now - cameraRevealStart;
+  const t = Math.min(elapsed / CAMERA_MOVE_DUR, 1);
+  const orbitRadius = 6.1;
+  const orbitHeight = 3.15;
+
+  if (elapsed >= CAMERA_MOVE_DUR) {
+    const p = easeOut(Math.min((elapsed - CAMERA_MOVE_DUR) / CAMERA_TOP_SPIN_DUR, 1));
+    const spin = p * CAMERA_TOP_SPIN_ANGLE;
+    camera.position.copy(cameraRevealTop);
+    camera.up.set(Math.sin(spin), 0, -Math.cos(spin)).normalize();
+  } else if (t < CAMERA_ORBIT_PORTION) {
+    const p = easeInOut(t / CAMERA_ORBIT_PORTION);
+    const angle = cameraRevealAngle + p * Math.PI * 1.15;
+    camera.up.copy(DEFAULT_CAMERA_UP);
+    camera.position.set(
+      cameraRevealTarget.x + Math.cos(angle) * orbitRadius,
+      FLOOR_Y + orbitHeight,
+      cameraRevealTarget.z + Math.sin(angle) * orbitRadius
+    );
+  } else {
+    const p = easeInOut((t - CAMERA_ORBIT_PORTION) / (1 - CAMERA_ORBIT_PORTION));
+    const endAngle = cameraRevealAngle + Math.PI * 1.15;
+    const orbitEnd = new THREE.Vector3(
+      cameraRevealTarget.x + Math.cos(endAngle) * orbitRadius,
+      FLOOR_Y + orbitHeight,
+      cameraRevealTarget.z + Math.sin(endAngle) * orbitRadius
+    );
+    camera.position.lerpVectors(orbitEnd, cameraRevealTop, p);
+    camera.up.set(0, 1 - p, -p).normalize();
+  }
+
+  camera.lookAt(cameraRevealTarget);
+
+  if (elapsed >= CAMERA_REVEAL_DUR) {
+    cameraRevealActive = false;
+    finishSettledReveal();
+  }
+}
+
+function finishSettledReveal() {
+  const num = FACE_NUMBERS[settledFaceIdx];
   showResult(num);
   addHistory(num);
   setTimeout(()=> document.getElementById('hint').classList.remove('hide'), 700);
@@ -668,7 +773,9 @@ function animate(now) {
     stepPhysics(dt);
   } else if (snapping) {
     updateSnap(now);
-  } else {
+  } else if (cameraRevealActive) {
+    updateCameraReveal(now);
+  } else if (!resultShowing) {
     updateIdle(dt);
   }
 
