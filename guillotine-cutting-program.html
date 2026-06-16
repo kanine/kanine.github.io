@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guillotine Cutting Program — 63×88mm Cards</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --ink: #1a1a1a;
+    --ink-mid: #4a4a4a;
+    --ink-soft: #8a8a8a;
+    --paper: #f7f5f0;
+    --paper-warm: #edeae2;
+    --rule: #d0ccc2;
+    --blade: #c0392b;
+    --blade-light: #e8b4b0;
+    --strip-fill: #dbe8f5;
+    --strip-border: #5b9bd5;
+    --card-fill: #d4edda;
+    --card-border: #2d7a4f;
+    --trim-fill: #fef3cd;
+    --trim-border: #c8941a;
+    --accent: #c0392b;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--ink);
+    color: #fff;
+    padding: 2.5rem 3rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .header-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 1.25rem;
+  }
+  .header h1 strong { font-weight: 600; }
+  .spec-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 4px 12px;
+    border: 1px solid #444;
+    border-radius: 2px;
+    color: #ccc;
+  }
+  .pill span { color: #fff; font-weight: 500; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    background: var(--accent);
+    display: flex;
+    justify-content: center;
+    gap: 0;
+  }
+  .stat {
+    flex: 1;
+    max-width: 200px;
+    text-align: center;
+    padding: 1rem 1.5rem;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+  }
+  .stat:last-child { border-right: none; }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 600;
+    display: block;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main { max-width: 900px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+
+  /* ── PHASE SECTIONS ── */
+  .phase { margin-bottom: 3rem; }
+
+  .phase-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 12px;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .phase-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .phase-title {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .phase-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* ── DIAGRAM AREA ── */
+  .diagram-area {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── ANIMATED SHEET (Phase 1) ── */
+  .sheet-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  .sheet-visual {
+    flex-shrink: 0;
+    position: relative;
+    width: 200px;
+    height: 280px;
+  }
+  .sheet-svg { width: 100%; height: 100%; }
+
+  /* blade animation */
+  .blade-line {
+    stroke: var(--blade);
+    stroke-width: 2;
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    transition: none;
+  }
+  .blade-line.cut-1 { animation: drawBlade 0.4s 0.3s ease-out forwards; }
+  .blade-line.cut-2 { animation: drawBlade 0.4s 0.9s ease-out forwards; }
+  .blade-line.cut-3 { animation: drawBlade 0.4s 1.5s ease-out forwards; }
+  .blade-line.cut-4 { animation: drawBlade 0.4s 2.1s ease-out forwards; }
+  .blade-line.cut-5 { animation: drawBlade 0.4s 2.7s ease-out forwards; }
+
+  @keyframes drawBlade {
+    from { stroke-dashoffset: 200; }
+    to   { stroke-dashoffset: 0; }
+  }
+
+  /* strip drop animation */
+  .strip-group { transition: transform 0.5s ease, opacity 0.5s ease; }
+  .strip-group.drop-1 { animation: dropStrip 0.5s 0.9s ease-out both; }
+  .strip-group.drop-2 { animation: dropStrip 0.5s 1.5s ease-out both; }
+  .strip-group.drop-3 { animation: dropStrip 0.5s 2.1s ease-out both; }
+  .strip-group.drop-4 { animation: dropStrip 0.5s 2.7s ease-out both; }
+
+  @keyframes dropStrip {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.5; transform: translateX(8px); }
+    100% { opacity: 0.7; transform: translateX(0); }
+  }
+
+  /* ── CUT SEQUENCE STEPS ── */
+  .cut-steps { flex: 1; min-width: 260px; }
+  .cut-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--paper-warm);
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  .cut-step:last-child { border-bottom: none; }
+
+  .cut-step.anim-1 { animation: stepIn 0.4s 0.2s ease-out forwards; }
+  .cut-step.anim-2 { animation: stepIn 0.4s 0.8s ease-out forwards; }
+  .cut-step.anim-3 { animation: stepIn 0.4s 1.4s ease-out forwards; }
+  .cut-step.anim-4 { animation: stepIn 0.4s 2.0s ease-out forwards; }
+  .cut-step.anim-5 { animation: stepIn 0.4s 2.6s ease-out forwards; }
+
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    min-width: 22px;
+    padding-top: 2px;
+  }
+  .step-body {}
+  .step-gauge {
+    font-family: 'DM Mono', monospace;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .step-desc {
+    font-size: 12px;
+    color: var(--ink-mid);
+    line-height: 1.4;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    padding: 1px 7px;
+    border-radius: 2px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .tag-trim { background: var(--trim-fill); color: #7a5a0a; border: 1px solid var(--trim-border); }
+  .tag-strip { background: var(--strip-fill); color: #1a4f7a; border: 1px solid var(--strip-border); }
+  .tag-card  { background: var(--card-fill);  color: #1a5e32; border: 1px solid var(--card-border); }
+
+  /* ── PHASE 2 DIAGRAM ── */
+  .strips-visual {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    height: 160px;
+    margin: 0 auto 1.5rem;
+  }
+
+  .v-blade-line {
+    stroke: var(--blade);
+    stroke-width: 2;
+    stroke-dasharray: 160;
+    stroke-dashoffset: 160;
+  }
+  .v-cut-1 { animation: drawVBlade 0.35s 0.4s ease-out forwards; }
+  .v-cut-2 { animation: drawVBlade 0.35s 0.9s ease-out forwards; }
+  .v-cut-3 { animation: drawVBlade 0.35s 1.4s ease-out forwards; }
+  .v-cut-4 { animation: drawVBlade 0.35s 1.9s ease-out forwards; }
+  .v-cut-5 { animation: drawVBlade 0.35s 2.4s ease-out forwards; }
+
+  @keyframes drawVBlade {
+    from { stroke-dashoffset: 160; }
+    to   { stroke-dashoffset: 0; }
+  }
+
+  .card-col { opacity: 0; }
+  .card-col.reveal-1 { animation: cardReveal 0.4s 1.0s ease-out forwards; }
+  .card-col.reveal-2 { animation: cardReveal 0.4s 1.5s ease-out forwards; }
+  .card-col.reveal-3 { animation: cardReveal 0.4s 2.0s ease-out forwards; }
+  .card-col.reveal-4 { animation: cardReveal 0.4s 2.5s ease-out forwards; }
+
+  @keyframes cardReveal {
+    from { opacity: 0; transform: scaleY(0.9); }
+    to   { opacity: 1; transform: scaleY(1); }
+  }
+
+  .p2-cuts { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .p2-cut-step {
+    flex: 1;
+    min-width: 130px;
+    padding: 10px 12px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .p2-cut-step.p2-anim-1 { animation: stepUp 0.35s 0.3s ease-out forwards; }
+  .p2-cut-step.p2-anim-2 { animation: stepUp 0.35s 0.7s ease-out forwards; }
+  .p2-cut-step.p2-anim-3 { animation: stepUp 0.35s 1.1s ease-out forwards; }
+  .p2-cut-step.p2-anim-4 { animation: stepUp 0.35s 1.5s ease-out forwards; }
+  .p2-cut-step.p2-anim-5 { animation: stepUp 0.35s 1.9s ease-out forwards; }
+
+  @keyframes stepUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .p2-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); margin-bottom: 4px; }
+  .p2-gauge {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .p2-desc { font-size: 11px; color: var(--ink-mid); }
+
+  /* ── INSTRUCTION BOXES ── */
+  .instruction-box {
+    background: var(--paper-warm);
+    border-left: 3px solid var(--blade);
+    border-radius: 0 3px 3px 0;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--ink-mid);
+    margin-top: 1.25rem;
+    line-height: 1.6;
+  }
+  .instruction-box strong { color: var(--ink); }
+
+  /* ── FEED DIRECTION INDICATOR ── */
+  .feed-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px 6px 10px;
+    border-radius: 2px;
+    margin-bottom: 1.25rem;
+  }
+  .feed-arrow {
+    font-size: 16px;
+    animation: pulseArrow 1.2s ease-in-out infinite;
+  }
+  @keyframes pulseArrow {
+    0%, 100% { transform: translateY(0); opacity: 1; }
+    50%       { transform: translateY(-3px); opacity: 0.6; }
+  }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    background: var(--ink);
+    color: #fff;
+    border-radius: 4px;
+    padding: 2rem 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeIn 0.6s 0.4s ease-out forwards;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .result-big {
+    font-size: 64px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--accent);
+  }
+  .result-label { font-size: 14px; color: #aaa; margin-top: 4px; }
+  .result-details { flex: 1; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #333;
+    font-size: 14px;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-row-key { color: #888; font-size: 12px; font-family: 'DM Mono', monospace; }
+  .result-row-val { font-weight: 500; }
+
+  /* ── GAUGE VERIFICATION BOX ── */
+  .verify-box {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.25rem;
+  }
+  .verify-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .verify-chain {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+  }
+  .verify-num {
+    background: var(--card-fill);
+    border: 1px solid var(--card-border);
+    border-radius: 2px;
+    padding: 3px 10px;
+    color: #1a5e32;
+    font-weight: 500;
+  }
+  .verify-plus { color: var(--ink-soft); }
+
+  /* ── PRINT STYLES ── */
+  @media print {
+    body { background: #fff; }
+    .header { background: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .stats-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    * { animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
+
+  @media (max-width: 600px) {
+    .header { padding: 1.5rem; }
+    .main { padding: 1.5rem 1rem 3rem; }
+    .phase-meta { display: none; }
+    .stat { padding: 0.75rem 1rem; }
+    .stat-value { font-size: 20px; }
+  }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─────── HEADER ─────── -->
+<header class="header">
+  <p class="header-eyebrow">Electric Guillotine · Cutting Program</p>
+  <h1><strong>63 × 88 mm</strong> card cut sequence</h1>
+  <div class="spec-pills">
+    <div class="pill">Bleed <span>3 mm</span></div>
+    <div class="pill">Sheet <span>320 × 450 mm</span></div>
+    <div class="pill">Card + bleed <span>69 × 94 mm</span></div>
+    <div class="pill">Layout <span>4 × 4 grid, centred</span></div>
+  </div>
+</header>
+
+<!-- ─────── STATS BAR ─────── -->
+<div class="stats-bar">
+  <div class="stat">
+    <span class="stat-value">16</span>
+    <span class="stat-label">Cards per sheet</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">10</span>
+    <span class="stat-label">Total cuts</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">2</span>
+    <span class="stat-label">Phases</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">4</span>
+    <span class="stat-label">Strips stacked</span>
+  </div>
+</div>
+
+<!-- ─────── MAIN ─────── -->
+<main class="main">
+
+  <!-- ══ PHASE 1 ══ -->
+  <section class="phase">
+    <div class="phase-header">
+      <span class="phase-num">Phase 01</span>
+      <h2 class="phase-title">Strip cuts — 5 cuts across the sheet</h2>
+      <span class="phase-meta">one sheet at a time</span>
+    </div>
+
+    <div class="feed-indicator">
+      <span class="feed-arrow">↑</span>
+      Feed the <strong>&nbsp;320 mm short edge&nbsp;</strong> into the guillotine
+    </div>
+
+    <div class="diagram-area">
+      <div class="sheet-container">
+
+        <!-- SVG SHEET DIAGRAM -->
+        <div class="sheet-visual">
+          <svg class="sheet-svg" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sheet background -->
+            <rect x="10" y="5" width="180" height="270" fill="#f0ede6" stroke="#c0b8a8" stroke-width="1" rx="2"/>
+
+            <!-- Top margin waste (hatch) -->
+            <defs>
+              <pattern id="h1" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#c8b87a" stroke-width="1.5"/>
+              </pattern>
+              <pattern id="h2" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#c8b87a" stroke-width="1.5"/>
+              </pattern>
+            </defs>
+            <rect x="10" y="5" width="180" height="28" fill="url(#h1)" rx="2"/>
+            <!-- Bottom margin waste -->
+            <rect x="10" y="247" width="180" height="28" fill="url(#h2)"/>
+            <!-- Side margins -->
+            <rect x="10" y="33" width="16" height="214" fill="#ddd9ce"/>
+            <rect x="174" y="33" width="16" height="214" fill="#ddd9ce"/>
+
+            <!-- Card rows (4 rows, each 53.5px tall in 214px space) -->
+            <!-- Row 1 -->
+            <g class="strip-group drop-1">
+              <rect x="26" y="33"  width="148" height="53.5" fill="#dbe8f5" stroke="#5b9bd5" stroke-width="0.5"/>
+              <line x1="63" y1="33"  x2="63"  y2="86.5"  stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="100" y1="33" x2="100" y2="86.5"  stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="137" y1="33" x2="137" y2="86.5"  stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <text x="100" y="65" text-anchor="middle" font-family="'DM Mono', monospace" font-size="9" fill="#2a5f8a">strip 1</text>
+            </g>
+            <!-- Row 2 -->
+            <g class="strip-group drop-2">
+              <rect x="26" y="86.5" width="148" height="53.5" fill="#dbe8f5" stroke="#5b9bd5" stroke-width="0.5"/>
+              <line x1="63" y1="86.5"  x2="63"  y2="140" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="100" y1="86.5" x2="100" y2="140" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="137" y1="86.5" x2="137" y2="140" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <text x="100" y="118" text-anchor="middle" font-family="'DM Mono', monospace" font-size="9" fill="#2a5f8a">strip 2</text>
+            </g>
+            <!-- Row 3 -->
+            <g class="strip-group drop-3">
+              <rect x="26" y="140" width="148" height="53.5" fill="#dbe8f5" stroke="#5b9bd5" stroke-width="0.5"/>
+              <line x1="63" y1="140"  x2="63"  y2="193.5" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="100" y1="140" x2="100" y2="193.5" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="137" y1="140" x2="137" y2="193.5" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <text x="100" y="172" text-anchor="middle" font-family="'DM Mono', monospace" font-size="9" fill="#2a5f8a">strip 3</text>
+            </g>
+            <!-- Row 4 -->
+            <g class="strip-group drop-4">
+              <rect x="26" y="193.5" width="148" height="53.5" fill="#dbe8f5" stroke="#5b9bd5" stroke-width="0.5"/>
+              <line x1="63" y1="193.5"  x2="63"  y2="247" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="100" y1="193.5" x2="100" y2="247" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <line x1="137" y1="193.5" x2="137" y2="247" stroke="#5b9bd5" stroke-width="0.5" stroke-dasharray="3,2"/>
+              <text x="100" y="225" text-anchor="middle" font-family="'DM Mono', monospace" font-size="9" fill="#2a5f8a">strip 4</text>
+            </g>
+
+            <!-- Animated cut lines -->
+            <line class="blade-line cut-1" x1="4" y1="33"   x2="196" y2="33"/>
+            <line class="blade-line cut-2" x1="4" y1="86.5" x2="196" y2="86.5"/>
+            <line class="blade-line cut-3" x1="4" y1="140"  x2="196" y2="140"/>
+            <line class="blade-line cut-4" x1="4" y1="193.5" x2="196" y2="193.5"/>
+            <line class="blade-line cut-5" x1="4" y1="247"  x2="196" y2="247"/>
+
+            <!-- Cut number labels -->
+            <text x="3" y="31" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C1</text>
+            <text x="3" y="84" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C2</text>
+            <text x="3" y="138" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C3</text>
+            <text x="3" y="191" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C4</text>
+            <text x="3" y="245" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C5</text>
+
+            <!-- Feed arrow -->
+            <text x="100" y="275" text-anchor="middle" font-family="'Inter',sans-serif" font-size="9" fill="#8a8a8a">⟵ 320 mm ⟶</text>
+          </svg>
+        </div>
+
+        <!-- CUT STEPS LIST -->
+        <div class="cut-steps">
+          <div class="cut-step anim-1">
+            <div class="step-num">C1</div>
+            <div class="step-body">
+              <div class="step-gauge">37.0 mm <span class="tag tag-trim">trim</span></div>
+              <div class="step-desc">Top waste margin — discard off-cut</div>
+            </div>
+          </div>
+          <div class="cut-step anim-2">
+            <div class="step-num">C2</div>
+            <div class="step-body">
+              <div class="step-gauge">131.0 mm <span class="tag tag-strip">strip</span></div>
+              <div class="step-desc">Strip 1 released · 94 mm tall</div>
+            </div>
+          </div>
+          <div class="cut-step anim-3">
+            <div class="step-num">C3</div>
+            <div class="step-body">
+              <div class="step-gauge">225.0 mm <span class="tag tag-strip">strip</span></div>
+              <div class="step-desc">Strip 2 released · 94 mm tall</div>
+            </div>
+          </div>
+          <div class="cut-step anim-4">
+            <div class="step-num">C4</div>
+            <div class="step-body">
+              <div class="step-gauge">319.0 mm <span class="tag tag-strip">strip</span></div>
+              <div class="step-desc">Strip 3 released · 94 mm tall</div>
+            </div>
+          </div>
+          <div class="cut-step anim-5">
+            <div class="step-num">C5</div>
+            <div class="step-body">
+              <div class="step-gauge">413.0 mm <span class="tag tag-strip">strip</span></div>
+              <div class="step-desc">Strip 4 released — bottom waste remains, discard</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="instruction-box">
+      <strong>After phase 1:</strong> Collect all 4 strips and stack them together, aligning the left edges carefully. Keep the same orientation — the 320 mm edge stays leading. You now have a 320 × 94 mm stack ready for phase 2.
+    </div>
+  </section>
+
+  <!-- ══ PHASE 2 ══ -->
+  <section class="phase">
+    <div class="phase-header">
+      <span class="phase-num">Phase 02</span>
+      <h2 class="phase-title">Card cuts — 5 cuts across the stack</h2>
+      <span class="phase-meta">all 4 strips stacked</span>
+    </div>
+
+    <div class="feed-indicator">
+      <span class="feed-arrow">↑</span>
+      Feed the same <strong>&nbsp;320 mm edge&nbsp;</strong> into the guillotine · stack of 4 strips
+    </div>
+
+    <div class="diagram-area">
+
+      <!-- STRIPS STACK DIAGRAM -->
+      <svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px;display:block;margin:0 auto 1.5rem">
+        <!-- Stack shadow layers -->
+        <rect x="22" y="102" width="476" height="22" fill="#c8c4bc" rx="2"/>
+        <rect x="21" y="98"  width="476" height="22" fill="#d8d4cc" rx="2"/>
+        <rect x="20" y="94"  width="476" height="22" fill="#e4e0d8" rx="2"/>
+
+        <!-- Main strip (top of stack) -->
+        <rect x="20" y="20"  width="476" height="76" fill="#f0ede6" stroke="#b0a898" stroke-width="1" rx="2"/>
+
+        <!-- Left trim waste -->
+        <rect x="20" y="20" width="34" height="76" fill="#fef3cd" stroke="#c8941a" stroke-width="0.5" rx="2"/>
+        <text x="37" y="62" text-anchor="middle" font-family="'DM Mono',monospace" font-size="9" fill="#7a5a0a">waste</text>
+
+        <!-- Card columns -->
+        <g class="card-col reveal-1">
+          <rect x="54"  y="20" width="105" height="76" fill="#d4edda" stroke="#2d7a4f" stroke-width="0.5"/>
+          <text x="106" y="62" text-anchor="middle" font-family="'DM Mono',monospace" font-size="10" fill="#1a5e32">col 1</text>
+        </g>
+        <g class="card-col reveal-2">
+          <rect x="159" y="20" width="105" height="76" fill="#d4edda" stroke="#2d7a4f" stroke-width="0.5"/>
+          <text x="211" y="62" text-anchor="middle" font-family="'DM Mono',monospace" font-size="10" fill="#1a5e32">col 2</text>
+        </g>
+        <g class="card-col reveal-3">
+          <rect x="264" y="20" width="105" height="76" fill="#d4edda" stroke="#2d7a4f" stroke-width="0.5"/>
+          <text x="316" y="62" text-anchor="middle" font-family="'DM Mono',monospace" font-size="10" fill="#1a5e32">col 3</text>
+        </g>
+        <g class="card-col reveal-4">
+          <rect x="369" y="20" width="105" height="76" fill="#d4edda" stroke="#2d7a4f" stroke-width="0.5"/>
+          <text x="421" y="62" text-anchor="middle" font-family="'DM Mono',monospace" font-size="10" fill="#1a5e32">col 4</text>
+        </g>
+        <!-- Right trim waste -->
+        <rect x="474" y="20" width="22" height="76" fill="#fef3cd" stroke="#c8941a" stroke-width="0.5"/>
+
+        <!-- Animated vertical cut lines -->
+        <line class="v-blade-line v-cut-1" x1="54"  y1="12" x2="54"  y2="98"/>
+        <line class="v-blade-line v-cut-2" x1="159" y1="12" x2="159" y2="98"/>
+        <line class="v-blade-line v-cut-3" x1="264" y1="12" x2="264" y2="98"/>
+        <line class="v-blade-line v-cut-4" x1="369" y1="12" x2="369" y2="98"/>
+        <line class="v-blade-line v-cut-5" x1="474" y1="12" x2="474" y2="98"/>
+
+        <!-- Cut labels -->
+        <text x="54"  y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C1</text>
+        <text x="159" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C2</text>
+        <text x="264" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C3</text>
+        <text x="369" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C4</text>
+        <text x="474" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C5</text>
+
+        <!-- Dimension labels -->
+        <text x="266" y="143" text-anchor="middle" font-family="'Inter',sans-serif" font-size="9" fill="#8a8a8a">⟵ 320 mm across blade ⟶</text>
+      </svg>
+
+      <!-- Phase 2 cut steps -->
+      <div class="p2-cuts">
+        <div class="p2-cut-step p2-anim-1">
+          <div class="p2-num">C1 <span class="tag tag-trim">trim</span></div>
+          <div class="p2-gauge">22.0 mm</div>
+          <div class="p2-desc">Left waste — discard</div>
+        </div>
+        <div class="p2-cut-step p2-anim-2">
+          <div class="p2-num">C2 <span class="tag tag-card">card</span></div>
+          <div class="p2-gauge">91.0 mm</div>
+          <div class="p2-desc">Column 1 × 4 cards</div>
+        </div>
+        <div class="p2-cut-step p2-anim-3">
+          <div class="p2-num">C3 <span class="tag tag-card">card</span></div>
+          <div class="p2-gauge">160.0 mm</div>
+          <div class="p2-desc">Column 2 × 4 cards</div>
+        </div>
+        <div class="p2-cut-step p2-anim-4">
+          <div class="p2-num">C4 <span class="tag tag-card">card</span></div>
+          <div class="p2-gauge">229.0 mm</div>
+          <div class="p2-desc">Column 3 × 4 cards</div>
+        </div>
+        <div class="p2-cut-step p2-anim-5">
+          <div class="p2-num">C5 <span class="tag tag-card">card</span></div>
+          <div class="p2-gauge">298.0 mm</div>
+          <div class="p2-desc">Column 4 × 4 cards</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="verify-box">
+      <div class="verify-title">Gauge check — 69 mm card pitch from trim cut</div>
+      <div class="verify-chain">
+        <span class="verify-num">22.0</span>
+        <span class="verify-plus">+ 69 =</span>
+        <span class="verify-num">91.0</span>
+        <span class="verify-plus">+ 69 =</span>
+        <span class="verify-num">160.0</span>
+        <span class="verify-plus">+ 69 =</span>
+        <span class="verify-num">229.0</span>
+        <span class="verify-plus">+ 69 =</span>
+        <span class="verify-num">298.0</span>
+      </div>
+    </div>
+
+    <div class="instruction-box">
+      <strong>After phase 2:</strong> Right waste remains — discard. You now have 16 finished cards (4 stacks of 4). Each card is 63 × 88 mm with bleed trimmed to the artwork edge.
+    </div>
+  </section>
+
+  <!-- ══ RESULT ══ -->
+  <div class="result-card">
+    <div>
+      <div class="result-big">16</div>
+      <div class="result-label">cards per sheet</div>
+    </div>
+    <div class="result-details">
+      <div class="result-row">
+        <span class="result-row-key">finished size</span>
+        <span class="result-row-val">63 × 88 mm</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-key">card + bleed size</span>
+        <span class="result-row-val">69 × 94 mm</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-key">grid layout</span>
+        <span class="result-row-val">4 columns × 4 rows</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-key">phase 1 cuts</span>
+        <span class="result-row-val">5 cuts (1 trim + 4 strips)</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-key">phase 2 cuts</span>
+        <span class="result-row-val">5 cuts (1 trim + 4 cards)</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-key">total cuts per sheet</span>
+        <span class="result-row-val">10 cuts</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>
