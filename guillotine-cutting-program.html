@@ -1,96 +1,3 @@
-
-Claude finished the response
-create a cutting program for an electic guillotine based on the following information Finished Card Width    63    mm
-Finished Card Height    88    mm
-Bleed    3    mm
-Paper Height    450    mm
-Paper Width    320    mm assume the artwork is centered on the page show the cutting program in an html instruction guide, first cut should be facing the short edge of the full card stock into the guilloine and cut along the top of the top row of cards then to steps to make 4 strips of the card height then stack the 4 strips and feed into the guillotine for the second direction of cuts
-
-12:19
-Let me first work out all the cut positions mathematically before building the guide.
-
-
-Calculate all cut positions for the card guillotine program
-Calculate all cut positions for the card guillotine program
-Now I have all the data. Let me build the HTML guide.
-
-
-
-Here's the complete cutting program. A quick summary of what's in there:
-
-Sheet yields 16 cards — 4 columns × 4 rows
-
-Phase 1 — 5 cuts, short edge (320 mm) to the blade:
-
-Cut 1 at 37 mm — top trim waste
-Cuts 2–5 at 131 / 225 / 319 / 413 mm — releases the 4 strips (94 mm tall each), bottom waste discarded after the last cut
-Phase 2 — stack all 4 strips, same orientation, 5 cuts:
-
-Cut 1 at 22 mm — left trim waste
-Cuts 2–5 at 91 / 160 / 229 / 298 mm — releases all 4 card columns simultaneously
-The gauge positions follow a simple 69 mm pitch (63 + 3 + 3 bleed) after each trim cut, so they're easy to verify on the machine. Let me know if you need this adjusted for a different paper size or want a printable PDF version.
-
-place instructions into a self contained html with animations a
-
-12:20
-
-Check available skills
-Check available skills
-Now let me build a polished, self-contained HTML file with animations.
-
-
-Created a file, read a file
-Created a file, read a file
-Here's your self-contained HTML cutting guide. What's animated:
-
-Phase 1 — the red blade lines draw across the sheet one by one in sequence (cuts 1→5), with each strip pulsing as it's released. The cut step rows slide in from the left in sync.
-
-Phase 2 — the vertical blade lines draw down through the stacked strips one by one, with each card column fading in as it's freed. The gauge cards below step up in sequence.
-
-Everything else — the result card at the bottom, the feed direction indicators, the gauge verification chain — fades in cleanly on load. The file is fully self-contained (Google Fonts are the only external dependency), prints cleanly with animations suppressed, and respects prefers-reduced-motion.
-
-
-Guillotine cutting program
-Code · HTML 
-i would expect the first cut to have been around 410mm then card would be rotated 180deg the second cut would be 410-88mm, then 410-88-bleed then the card height again and so on
-
-12:23
-You're right — let me re-think the logic. The first cut trims the bottom of the sheet (feed the long edge in, cut at ~413mm to clear the bottom waste), then the sheet is flipped 180°, and subsequent cuts work down through the rows from what is now the leading edge.
-
-Let me recalculate properly.
-
-
-Recalculate cut sequence with correct rotation logic
-Recalculate cut sequence with correct rotation logic
-That confirms it. Now let me rebuild the HTML with the corrected logic and updated animations.
-
-
-Ran a command, read a file
-Ran a command, read a file
-Updated and corrected. Here's what changed:
-
-Phase 1 now works the way you described:
-
-C1 at 413 mm — long edge (450mm) feeds in, first cut trims the 37mm bottom waste, the small offcut falls away
-Rotate 180° — animated flip divider with a spinning icon in the step list; the "after flip" diagram appears, showing the original top is now the leading edge
-C2 at 319 mm — row 4 (the former bottom row) is released as the first clean strip
-C3 at 225 mm, C4 at 131 mm, C5 at 37 mm — each step is exactly 94mm less (one card+bleed), stripping rows 3, 2, 1 in sequence
-After C5, the 37mm top waste is all that's left in the machine — discard it
-The two-diagram layout shows the "before flip" and "after flip" states side by side, with blade lines animating on each in sequence. Phase 2 is unchanged.
-
-
-Guillotine cutting program
-Code · HTML 
-
-Want to be notified when Claude responds?
-
-
-
-
-Claude is AI and can make mistakes. Please double-check responses.
-
-
-Guillotine cutting program · HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -99,7 +6,7 @@ Guillotine cutting program · HTML
 <title>Guillotine Cutting Program — 63×88mm Cards</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap');
- 
+
   :root {
     --ink: #1a1a1a;
     --ink-mid: #4a4a4a;
@@ -117,16 +24,16 @@ Guillotine cutting program · HTML
     --accent: #c0392b;
     --flip-color: #7b4fbf;
   }
- 
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
+
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background: var(--paper);
     color: var(--ink);
     min-height: 100vh;
   }
- 
+
   /* ── HEADER ── */
   .header {
     background: var(--ink);
@@ -167,7 +74,7 @@ Guillotine cutting program · HTML
     color: #ccc;
   }
   .pill span { color: #fff; font-weight: 500; }
- 
+
   /* ── STATS BAR ── */
   .stats-bar {
     background: var(--accent);
@@ -185,10 +92,10 @@ Guillotine cutting program · HTML
   .stat:last-child { border-right: none; }
   .stat-value { font-size: 26px; font-weight: 600; display: block; line-height: 1; }
   .stat-label { font-size: 11px; opacity: 0.8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; display: block; }
- 
+
   /* ── MAIN ── */
   .main { max-width: 960px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
- 
+
   /* ── PHASE ── */
   .phase { margin-bottom: 3rem; }
   .phase-header {
@@ -210,7 +117,7 @@ Guillotine cutting program · HTML
   }
   .phase-title { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
   .phase-meta { margin-left: auto; font-size: 12px; color: var(--ink-soft); font-family: 'DM Mono', monospace; white-space: nowrap; }
- 
+
   /* ── DIAGRAM AREA ── */
   .diagram-area {
     background: #fff;
@@ -219,7 +126,7 @@ Guillotine cutting program · HTML
     padding: 1.75rem;
     margin-bottom: 1.25rem;
   }
- 
+
   /* ── FEED INDICATOR ── */
   .feed-indicator {
     display: inline-flex;
@@ -238,7 +145,7 @@ Guillotine cutting program · HTML
     0%,100% { transform: translateY(0); opacity: 1; }
     50%      { transform: translateY(-3px); opacity: 0.6; }
   }
- 
+
   /* ── TAGS ── */
   .tag {
     display: inline-block;
@@ -253,11 +160,11 @@ Guillotine cutting program · HTML
   .tag-strip { background: var(--strip-fill); color: #1a4f7a; border: 1px solid var(--strip-border); }
   .tag-card  { background: var(--card-fill);  color: #1a5e32; border: 1px solid var(--card-border); }
   .tag-flip  { background: #ede5f8; color: #4a1f8a; border: 1px solid #9b72d8; }
- 
+
   /* ── PHASE 1 LAYOUT ── */
   .p1-layout { display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; }
   .p1-diagrams { display: flex; gap: 1.25rem; flex-shrink: 0; }
- 
+
   /* ── CUT STEPS ── */
   .cut-steps { flex: 1; min-width: 240px; }
   .cut-step {
@@ -279,7 +186,7 @@ Guillotine cutting program · HTML
     from { opacity: 0; transform: translateX(-10px); }
     to   { opacity: 1; transform: translateX(0); }
   }
- 
+
   /* flip divider */
   .flip-divider {
     display: flex;
@@ -304,11 +211,11 @@ Guillotine cutting program · HTML
     from { transform: rotate(0deg); }
     to   { transform: rotate(180deg); }
   }
- 
+
   .step-num { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--accent); min-width: 22px; padding-top: 2px; }
   .step-gauge { font-family: 'DM Mono', monospace; font-size: 17px; font-weight: 500; color: var(--ink); line-height: 1; margin-bottom: 3px; }
   .step-desc { font-size: 12px; color: var(--ink-mid); line-height: 1.4; }
- 
+
   /* ── INSTRUCTION BOX ── */
   .instruction-box {
     background: var(--paper-warm);
@@ -321,7 +228,7 @@ Guillotine cutting program · HTML
     line-height: 1.6;
   }
   .instruction-box strong { color: var(--ink); }
- 
+
   /* ── P2 CUTS GRID ── */
   .p2-cuts { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.25rem; }
   .p2-cut-step {
@@ -345,7 +252,7 @@ Guillotine cutting program · HTML
   .p2-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); margin-bottom: 4px; }
   .p2-gauge { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; margin-bottom: 3px; }
   .p2-desc { font-size: 11px; color: var(--ink-mid); }
- 
+
   /* ── VERIFY BOX ── */
   .verify-box {
     background: #fff;
@@ -365,7 +272,7 @@ Guillotine cutting program · HTML
   .verify-chain { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-family: 'DM Mono', monospace; font-size: 13px; }
   .verify-num { background: var(--card-fill); border: 1px solid var(--card-border); border-radius: 2px; padding: 3px 10px; color: #1a5e32; font-weight: 500; }
   .verify-plus { color: var(--ink-soft); }
- 
+
   /* ── RESULT CARD ── */
   .result-card {
     background: var(--ink);
@@ -391,9 +298,9 @@ Guillotine cutting program · HTML
   .result-row:last-child { border-bottom: none; }
   .result-row-key { color: #888; font-size: 12px; font-family: 'DM Mono', monospace; }
   .result-row-val { font-weight: 500; }
- 
+
   /* ── SVG ANIMATIONS ── */
- 
+
   /* Phase 1 — blade lines */
   .h-blade { stroke: var(--blade); stroke-width: 2; stroke-dasharray: 220; stroke-dashoffset: 220; }
   .hb1 { animation: drawH 0.4s 0.3s ease-out forwards; }
@@ -403,7 +310,7 @@ Guillotine cutting program · HTML
   .hb4 { animation: drawH 0.4s 1.9s ease-out forwards; }
   .hb5 { animation: drawH 0.4s 2.4s ease-out forwards; }
   @keyframes drawH { from { stroke-dashoffset: 220; } to { stroke-dashoffset: 0; } }
- 
+
   /* Strip release — fade + slide right as each is cut */
   .strip { opacity: 1; }
   .strip-r4 { animation: releaseStrip 0.5s 1.05s ease-out both; }
@@ -415,7 +322,7 @@ Guillotine cutting program · HTML
     60%  { opacity: 0.6; transform: translateX(14px); }
     100% { opacity: 0.5; transform: translateX(0); }
   }
- 
+
   /* Waste fade out */
   .waste-bottom { animation: fadeWaste 0.4s 0.5s ease-out both; }
   .waste-top    { animation: fadeWaste 0.4s 2.65s ease-out both; }
@@ -423,13 +330,13 @@ Guillotine cutting program · HTML
     from { opacity: 1; }
     to   { opacity: 0.2; }
   }
- 
+
   /* Phase 1 sheet flip animation */
   .pre-flip-sheet { animation: hideSheet 0.01s 0.76s forwards; }
   .post-flip-sheet { opacity: 0; animation: showFlipped 0.5s 0.8s ease-out forwards; }
   @keyframes hideSheet { to { opacity: 0; } }
   @keyframes showFlipped { from { opacity: 0; transform: scaleY(0.9); } to { opacity: 1; transform: scaleY(1); } }
- 
+
   /* Phase 2 vertical blades */
   .v-blade { stroke: var(--blade); stroke-width: 2; stroke-dasharray: 160; stroke-dashoffset: 160; }
   .vb1 { animation: drawV 0.35s 0.35s ease-out forwards; }
@@ -438,14 +345,14 @@ Guillotine cutting program · HTML
   .vb4 { animation: drawV 0.35s 1.85s ease-out forwards; }
   .vb5 { animation: drawV 0.35s 2.35s ease-out forwards; }
   @keyframes drawV { from { stroke-dashoffset: 160; } to { stroke-dashoffset: 0; } }
- 
+
   .card-col { opacity: 0; }
   .cc1 { animation: cardReveal 0.4s 0.95s ease-out forwards; }
   .cc2 { animation: cardReveal 0.4s 1.45s ease-out forwards; }
   .cc3 { animation: cardReveal 0.4s 1.95s ease-out forwards; }
   .cc4 { animation: cardReveal 0.4s 2.45s ease-out forwards; }
   @keyframes cardReveal { from { opacity: 0; transform: scaleY(0.92); } to { opacity: 1; transform: scaleY(1); } }
- 
+
   @media (max-width: 620px) {
     .header { padding: 1.5rem; }
     .main { padding: 1.5rem 1rem 3rem; }
@@ -463,7 +370,7 @@ Guillotine cutting program · HTML
 </style>
 </head>
 <body>
- 
+
 <header class="header">
   <p class="header-eyebrow">Electric Guillotine · Cutting Program</p>
   <h1><strong>63 × 88 mm</strong> card cut sequence</h1>
@@ -474,16 +381,16 @@ Guillotine cutting program · HTML
     <div class="pill">Grid <span>4 cols × 4 rows, centred</span></div>
   </div>
 </header>
- 
+
 <div class="stats-bar">
   <div class="stat"><span class="stat-value">16</span><span class="stat-label">Cards per sheet</span></div>
   <div class="stat"><span class="stat-value">10</span><span class="stat-label">Total cuts</span></div>
   <div class="stat"><span class="stat-value">2</span><span class="stat-label">Phases</span></div>
   <div class="stat"><span class="stat-value">4</span><span class="stat-label">Strips stacked</span></div>
 </div>
- 
+
 <main class="main">
- 
+
   <!-- ══ PHASE 1 ══ -->
   <section class="phase">
     <div class="phase-header">
@@ -491,18 +398,18 @@ Guillotine cutting program · HTML
       <h2 class="phase-title">Strip cuts — 5 cuts, one 180° rotation</h2>
       <span class="phase-meta">one sheet at a time</span>
     </div>
- 
+
     <div class="feed-indicator">
       <span class="feed-arrow">↑</span>
       Feed the <strong>&nbsp;450 mm long edge&nbsp;</strong> into the guillotine first
     </div>
- 
+
     <div class="diagram-area">
       <div class="p1-layout">
- 
+
         <!-- TWO SVG DIAGRAMS: before flip and after flip -->
         <div class="p1-diagrams">
- 
+
           <!-- BEFORE FLIP -->
           <div>
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Before flip</p>
@@ -512,7 +419,7 @@ Guillotine cutting program · HTML
                   <line x1="0" y1="0" x2="0" y2="5" stroke="#c8a850" stroke-width="1.5"/>
                 </pattern>
               </defs>
- 
+
               <!-- Sheet background -->
               <g class="pre-flip-sheet">
                 <rect x="18" y="4" width="104" height="296" fill="#f0ede6" stroke="#b0a898" stroke-width="1" rx="2"/>
@@ -542,12 +449,12 @@ Guillotine cutting program · HTML
                 <line x1="122" y1="296" x2="122" y2="268" stroke="#c0392b" stroke-width="0.75" stroke-dasharray="2,2"/>
                 <text x="124" y="285" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">413mm</text>
               </g>
- 
+
               <!-- Leading edge arrow -->
               <text x="70" y="307" text-anchor="middle" font-family="'Inter',sans-serif" font-size="9" fill="#8a8a8a">↑ leading edge (450mm)</text>
             </svg>
           </div>
- 
+
           <!-- AFTER FLIP -->
           <div>
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--flip-color);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">After 180° flip</p>
@@ -565,19 +472,19 @@ Guillotine cutting program · HTML
                 <!-- Side margins -->
                 <rect x="18" y="4"  width="11" height="272" fill="#ddd9ce"/>
                 <rect x="111" y="4" width="11" height="272" fill="#ddd9ce"/>
- 
+
                 <!-- After flip: original top waste is now at the FAR end from leading edge -->
                 <!-- Original row layout from new leading edge (bottom of this SVG): -->
                 <!-- 0-24: original top waste (now at top of SVG = far from blade) -->
                 <!-- 24-84: row1, 84-144: row2, 144-204: row3, 204-264: row4 -->
                 <!-- We draw top→bottom as far-end→leading-edge -->
- 
+
                 <!-- Original top waste — now at TOP of SVG (far from blade) -->
                 <g class="waste-top">
                   <rect x="18" y="4" width="104" height="24" fill="url(#hwaste2)"/>
                   <text x="70" y="20" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#7a5a0a">top waste</text>
                 </g>
- 
+
                 <!-- Row 1 (now at far end) — released last (cut 5) -->
                 <g class="strip strip-r1">
                   <rect x="29" y="28"  width="82" height="60" fill="#dbe8f5" stroke="#5b9bd5" stroke-width="0.5"/>
@@ -598,7 +505,7 @@ Guillotine cutting program · HTML
                   <rect x="29" y="208" width="82" height="60" fill="#dbe8f5" stroke="#5b9bd5" stroke-width="0.5"/>
                   <text x="70" y="242" text-anchor="middle" font-family="'DM Mono',monospace" font-size="9" fill="#2a5f8a">row 4</text>
                 </g>
- 
+
                 <!-- Cut lines (from new leading edge = bottom of SVG) -->
                 <!-- C2 at 319mm from leading edge = 319/413 * 272 ≈ 210px from bottom = y=276-210=66? -->
                 <!-- Let total height pixels = 272. Scale: 272/413 = 0.659 px/mm -->
@@ -615,32 +522,32 @@ Guillotine cutting program · HTML
                 <!-- C3: 276 - 225*(272/413) = 276 - 148.2 = 127.8 ≈ 128 -->
                 <!-- C4: 276 - 131*(272/413) = 276 -  86.3 = 189.7 ≈ 190 -->
                 <!-- C5: 276 -  37*(272/413) = 276 -  24.4 = 251.6 ≈ 252 -->
- 
+
                 <line class="h-blade hb2" x1="10" y1="66"  x2="130" y2="66"/>
                 <line class="h-blade hb3" x1="10" y1="128" x2="130" y2="128"/>
                 <line class="h-blade hb4" x1="10" y1="190" x2="130" y2="190"/>
                 <line class="h-blade hb5" x1="10" y1="252" x2="130" y2="252"/>
- 
+
                 <text x="8" y="64"  font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C2</text>
                 <text x="8" y="126" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C3</text>
                 <text x="8" y="188" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C4</text>
                 <text x="8" y="250" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b" text-anchor="end">C5</text>
- 
+
                 <!-- Gauge callouts right side -->
                 <text x="124" y="64"  font-family="'DM Mono',monospace" font-size="7.5" fill="#c0392b">319mm</text>
                 <text x="124" y="126" font-family="'DM Mono',monospace" font-size="7.5" fill="#c0392b">225mm</text>
                 <text x="124" y="188" font-family="'DM Mono',monospace" font-size="7.5" fill="#c0392b">131mm</text>
                 <text x="124" y="250" font-family="'DM Mono',monospace" font-size="7.5" fill="#c0392b">37mm</text>
               </g>
- 
+
               <!-- Leading edge indicator at bottom -->
               <text x="70" y="295" text-anchor="middle" font-family="'Inter',sans-serif" font-size="9" fill="var(--flip-color)">↑ new leading edge</text>
               <text x="70" y="307" text-anchor="middle" font-family="'Inter',sans-serif" font-size="9" fill="#8a8a8a">(original bottom)</text>
             </svg>
           </div>
- 
+
         </div>
- 
+
         <!-- CUT STEPS -->
         <div class="cut-steps">
           <div class="cut-step s1">
@@ -650,13 +557,13 @@ Guillotine cutting program · HTML
               <div class="step-desc">Bottom waste removed (37mm offcut) — discard</div>
             </div>
           </div>
- 
+
           <div class="flip-divider">
             <div class="flip-line"></div>
             <div class="flip-label"><span class="flip-icon">↻</span> Rotate sheet 180°</div>
             <div class="flip-line"></div>
           </div>
- 
+
           <div class="cut-step s2">
             <div class="step-num">C2</div>
             <div class="step-body">
@@ -686,15 +593,15 @@ Guillotine cutting program · HTML
             </div>
           </div>
         </div>
- 
+
       </div>
     </div>
- 
+
     <div class="instruction-box">
       <strong>Gauge logic:</strong> Each cut is exactly 94mm less than the previous (one card + bleed: 413 → 319 → 225 → 131 → 37). After cut 5 the remaining 37mm piece in the machine is the top waste — discard it. Stack all 4 strips, aligning the left edges, ready for phase 2.
     </div>
   </section>
- 
+
   <!-- ══ PHASE 2 ══ -->
   <section class="phase">
     <div class="phase-header">
@@ -702,12 +609,12 @@ Guillotine cutting program · HTML
       <h2 class="phase-title">Card cuts — 5 cuts across the stacked strips</h2>
       <span class="phase-meta">all 4 strips stacked together</span>
     </div>
- 
+
     <div class="feed-indicator">
       <span class="feed-arrow">↑</span>
       Feed the <strong>&nbsp;320 mm edge&nbsp;</strong> into the guillotine · 4 strips stacked
     </div>
- 
+
     <div class="diagram-area">
       <svg viewBox="0 0 540 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:540px;display:block;margin:0 auto">
         <!-- Stack shadow -->
@@ -738,24 +645,24 @@ Guillotine cutting program · HTML
         </g>
         <!-- Right waste -->
         <rect x="492" y="20" width="24" height="78" fill="#fef3cd" stroke="#c8941a" stroke-width="0.5"/>
- 
+
         <!-- Vertical cut lines -->
         <line class="v-blade vb1" x1="56"  y1="12" x2="56"  y2="102"/>
         <line class="v-blade vb2" x1="165" y1="12" x2="165" y2="102"/>
         <line class="v-blade vb3" x1="274" y1="12" x2="274" y2="102"/>
         <line class="v-blade vb4" x1="383" y1="12" x2="383" y2="102"/>
         <line class="v-blade vb5" x1="492" y1="12" x2="492" y2="102"/>
- 
+
         <!-- Cut labels -->
         <text x="56"  y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C1</text>
         <text x="165" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C2</text>
         <text x="274" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C3</text>
         <text x="383" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C4</text>
         <text x="492" y="9" text-anchor="middle" font-family="'DM Mono',monospace" font-size="8" fill="#c0392b">C5</text>
- 
+
         <text x="278" y="143" text-anchor="middle" font-family="'Inter',sans-serif" font-size="9" fill="#8a8a8a">⟵ 320 mm across blade ⟶</text>
       </svg>
- 
+
       <div class="p2-cuts">
         <div class="p2-cut-step a1">
           <div class="p2-num">C1 <span class="tag tag-trim">trim</span></div>
@@ -784,7 +691,7 @@ Guillotine cutting program · HTML
         </div>
       </div>
     </div>
- 
+
     <div class="verify-box">
       <div class="verify-title">Gauge check — 69 mm card pitch (63 + 3 + 3 bleed)</div>
       <div class="verify-chain">
@@ -799,12 +706,12 @@ Guillotine cutting program · HTML
         <span class="verify-num">298.0</span>
       </div>
     </div>
- 
+
     <div class="instruction-box">
       <strong>After phase 2:</strong> Right waste remains in machine — discard. You now have 16 finished cards in 4 stacks of 4, each 63 × 88 mm.
     </div>
   </section>
- 
+
   <!-- ══ RESULT ══ -->
   <div class="result-card">
     <div>
@@ -838,8 +745,7 @@ Guillotine cutting program · HTML
       </div>
     </div>
   </div>
- 
+
 </main>
 </body>
 </html>
- 
