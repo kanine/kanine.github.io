@@ -150,6 +150,23 @@
 
   @keyframes blink { 50% { opacity: 0; } }
 
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .header-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+
+  .header-link:hover { text-decoration: underline; }
+
   .input-row {
     display: flex;
     gap: 10px;
@@ -309,10 +326,18 @@
 
   footer {
     margin-top: 22px;
-    font-size: 12px;
+    font-size: 16px;
     color: var(--muted);
     text-align: center;
+    line-height: 1.8;
   }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -326,7 +351,10 @@
       <div class="body">
         <header>
           <p class="prompt">qrgen --interactive</p>
-          <h1>Generate QR code</h1>
+          <div class="title-row">
+            <h1>Generate QR code</h1>
+            <a class="header-link" href="qr-code-generatorBS.html">→ Printable label version</a>
+          </div>
         </header>
 
         <div class="input-row">
@@ -339,7 +367,10 @@
       </div>
     </div>
 
-    <footer>Rendered client-side. Nothing is sent anywhere.</footer>
+    <footer>
+      Rendered client-side. Nothing is sent anywhere.<br>
+      <a href="qr-code-generatorBS.html">→ Printable label version</a>
+    </footer>
   </div>
 
 <script>
