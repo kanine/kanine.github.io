@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Code</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <style>
+    /* Print-label specifics Bootstrap doesn't cover: physical mm sizing + @page. */
+    .labels {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .label {
+      display: flex;
+      width: 100mm;
+      height: 48mm;
+      max-width: 100%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid #bbb;
+      background: #fff;
+    }
+
+    .label img {
+      width: var(--qr-size);
+      height: var(--qr-size);
+      image-rendering: pixelated;
+    }
+
+    .label-value {
+      max-width: 94mm;
+      margin-top: 1mm;
+      overflow: hidden;
+      font-size: 12pt;
+      font-weight: 700;
+      line-height: 1.15;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media print {
+      @page {
+        size: 100mm 48mm;
+        margin: 0;
+      }
+
+      body {
+        width: 100mm;
+        height: 48mm;
+        padding: 0;
+        background: #fff;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        width: 100mm !important;
+        max-width: none !important;
+        padding: 0 !important;
+      }
+
+      .labels {
+        display: block;
+        gap: 0;
+      }
+
+      .label {
+        border: 0;
+        break-after: page;
+        page-break-after: always;
+      }
+
+      .label:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+    }
+  </style>
+</head>
+<body class="bg-body-tertiary">
+  <main class="container py-4" style="max-width: 720px;">
+    <h1 class="h4 mb-3 no-print">QR Code</h1>
+
+    <form id="qrForm" class="no-print mb-2" novalidate>
+      <div class="input-group input-group-lg">
+        <input
+          type="text"
+          id="qrvalue"
+          class="form-control"
+          aria-label="QR value"
+          placeholder="Enter QR code value"
+          maxlength="300"
+          autocomplete="off"
+          autofocus
+          required
+        >
+        <button type="submit" class="btn btn-dark">Generate</button>
+      </div>
+      <div class="form-text">Produces three QR codes that print at 16&nbsp;mm, 25&nbsp;mm and 34&nbsp;mm, each on a 100&nbsp;×&nbsp;48&nbsp;mm label at error-correction level M. Up to 300 characters.</div>
+    </form>
+
+    <div id="toolbar" class="no-print mb-4 d-none">
+      <button type="button" id="printBtn" class="btn btn-outline-secondary btn-sm">Print labels</button>
+    </div>
+
+    <div id="error" class="alert alert-danger no-print d-none" role="alert"></div>
+
+    <div id="labels" class="labels"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+  <script>
+    // Mirrors barcoder/qrcode.php: same sizes, ECC level, and per-module scale.
+    const VARIANTS = [
+      { sizeMm: 16, scale: 4 },
+      { sizeMm: 25, scale: 6 },
+      { sizeMm: 34, scale: 8 }
+    ];
+    const MAX_LENGTH = 300;
+
+    const form = document.getElementById('qrForm');
+    const input = document.getElementById('qrvalue');
+    const labels = document.getElementById('labels');
+    const toolbar = document.getElementById('toolbar');
+    const printBtn = document.getElementById('printBtn');
+    const errorBox = document.getElementById('error');
+
+    function showError(message) {
+      labels.innerHTML = '';
+      toolbar.classList.add('d-none');
+      errorBox.textContent = message;
+      errorBox.classList.remove('d-none');
+    }
+
+    function clearError() {
+      errorBox.classList.add('d-none');
+      errorBox.textContent = '';
+    }
+
+    function isHttpUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function buildLabel(value, sizeMm) {
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.style.setProperty('--qr-size', sizeMm + 'mm');
+
+      const img = document.createElement('img');
+      img.alt = 'QR code for ' + value;
+      label.appendChild(img);
+
+      const valueEl = document.createElement('div');
+      valueEl.className = 'label-value';
+      if (isHttpUrl(value)) {
+        const link = document.createElement('a');
+        link.className = 'text-decoration-none';
+        link.href = value;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        // Display a cleaner label: drop the scheme + leading "www." and any
+        // trailing slash. The href still points to the full original URL.
+        link.textContent = value.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '');
+        valueEl.appendChild(link);
+      } else {
+        valueEl.textContent = value;
+      }
+      label.appendChild(valueEl);
+
+      return { label, img };
+    }
+
+    function generate() {
+      clearError();
+      labels.innerHTML = '';
+      toolbar.classList.add('d-none');
+
+      const value = input.value.trim();
+      if (!value) {
+        return;
+      }
+      if (value.length > MAX_LENGTH) {
+        showError('That value is too long for a scannable QR code. Please shorten it and try again.');
+        return;
+      }
+
+      const built = VARIANTS.map(v => buildLabel(value, v.sizeMm));
+
+      let pending = VARIANTS.length;
+      let failed = false;
+
+      VARIANTS.forEach((variant, i) => {
+        QRCode.toDataURL(value, {
+          errorCorrectionLevel: 'M',
+          scale: variant.scale,
+          color: { dark: '#000000ff', light: '#ffffffff' }
+        }, function (err, url) {
+          if (failed) return;
+          if (err) {
+            failed = true;
+            showError('Unable to generate the QR code. Please try a shorter value or try again.');
+            return;
+          }
+          built[i].img.src = url;
+          pending -= 1;
+          if (pending === 0) {
+            // All variants rendered — reveal them together, in order.
+            built.forEach(b => labels.appendChild(b.label));
+            toolbar.classList.remove('d-none');
+          }
+        });
+      });
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      generate();
+    });
+
+    printBtn.addEventListener('click', () => window.print());
+  </script>
+</body>
+</html>
